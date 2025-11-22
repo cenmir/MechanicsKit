@@ -133,8 +133,5 @@ dmypy.json
 .DS_Store
 Thumbs.db
 
-# AI assistant files
-CLAUDE.md
-
-# Todo
-todo.md
+# Development files (notes, AI assistant files, todos, etc.)
+dev/
