@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "matkit"
+version = "0.1.0"
+authors = [
+  { name="Mirza Cenanovic", email="mirza.cenanovic@gmail.com" },
+]
+description = "Mathematical toolkit for engineering education: FEM with 1-based indexing, LaTeX rendering, and matrix operations."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Education",
+]
+keywords = ["fem", "finite-element-method", "education", "pedagogical", "1-based-indexing", "mesh", "structural-mechanics", "linear-algebra", "latex-rendering"]
+dependencies = [
+    "numpy>=1.20",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/cenmir/MatKit"
+"Bug Tracker" = "https://github.com/cenmir/MatKit/issues"
+"Documentation" = "https://github.com/cenmir/MatKit/blob/main/README.md"
+
+[tool.setuptools]
+packages = ["matkit"]
