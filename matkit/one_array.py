@@ -294,3 +294,19 @@ class OneArray:
         100
         """
         return self.data
+
+    def _repr_latex_(self):
+        """
+        LaTeX representation for marimo and Jupyter notebooks.
+
+        This enables pretty printing with the pipe operator:
+        >>> N = OneArray([100, 200, 300])
+        >>> N | la  # Renders as LaTeX in marimo and Jupyter
+
+        Returns
+        -------
+        latex_str : str
+            LaTeX representation wrapped in $$ ... $$
+        """
+        from .latex_array import LatexArray
+        return LatexArray(self.data)._repr_latex_()
