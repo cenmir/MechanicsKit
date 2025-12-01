@@ -1,4 +1,5 @@
 import numpy as np
+from IPython.display import display, Latex
 
 class LatexArray:
     """
@@ -124,3 +125,119 @@ class LatexRenderer:
 
 # Create the singleton instance that users will import
 la = LatexRenderer()
+
+
+def display_labeled_latex(label, array, precision=2, arrayStretch=1.5, show_shape=False):
+    r"""
+    Display a labeled LaTeX equation with a NumPy array or SymPy object formatted as a matrix.
+
+    Parameters:
+    -----------
+    label : str
+        The label/prefix for the equation (e.g., "\\mathbf{R} = ")
+    array : array_like or sympy object
+        The NumPy array or SymPy expression to display
+    precision : int, optional
+        Number of decimal places to display (default: 2). Ignored for SymPy objects.
+    arrayStretch : float, optional
+        Vertical spacing multiplier for matrix rows (default: 1.5). Only applies to
+        matrices and arrays, not scalars. Set to 1.0 for default LaTeX spacing.
+    show_shape : bool, optional
+        If True, display the array shape as a subscript on the matrix (default: False).
+        For 2D arrays: displays as _{rows \times cols}
+        For 1D arrays: displays as _{n}
+
+    Example:
+    --------
+    >>> display_labeled_latex("\\mathbf{R} = ", R, 0)
+    Displays: $$ \mathbf{R} = \begin{bmatrix}1 & -0 \\ 0 & 1\end{bmatrix} $$
+
+    >>> display_labeled_latex("\\mathbf{u} = ", u, 4)
+    Displays: $$ \mathbf{u} = \begin{bmatrix}0.0000 \\ 0.0000 \\ -0.1984 \\ ...\end{bmatrix} $$
+
+    >>> display_labeled_latex("\\mathbf{A} = ", A, arrayStretch=2.0)
+    Displays matrix with double row spacing
+
+    >>> display_labeled_latex("U = ", U, show_shape=True)
+    Displays: $$ U = \begin{bmatrix}...\end{bmatrix}_{4 \times 2} $$
+    """
+    # Check if the input is a SymPy object
+    try:
+        from sympy import latex as sympy_latex
+        # Check if it has the _sympy_ attribute or is from sympy module
+        if hasattr(array, '__module__') and 'sympy' in array.__module__:
+            # Use SymPy's latex function for symbolic expressions
+            latex_str = sympy_latex(array)
+            # Add shape subscript if requested and object has shape
+            if show_shape and hasattr(array, 'shape'):
+                shape = array.shape
+                if len(shape) == 1:
+                    latex_str += f"_{{{shape[0]}}}"
+                elif len(shape) == 2:
+                    latex_str += f"_{{{shape[0]} \\times {shape[1]}}}"
+            # Wrap with arraystretch for matrices/vectors only
+            if hasattr(array, 'shape'):
+                shape = array.shape
+                # Apply arraystretch for vectors and matrices (not scalars)
+                if len(shape) > 0 and (shape[0] > 1 or len(shape) > 1):
+                    latex_str = f"{{\\def\\arraystretch{{{arrayStretch}}}{latex_str}}}"
+            full_latex = f"$$ {label}{latex_str} $$"
+            display(Latex(full_latex))
+            return
+    except (ImportError, AttributeError):
+        pass  # SymPy not available, continue with NumPy handling
+
+    array = np.asarray(array)
+
+    # Helper to format numbers with specified precision
+    def format_val(v, prec):
+        if isinstance(v, (np.complexfloating, complex)):
+            # Format complex numbers
+            return f"{v.real:.{prec}f}{v.imag:+.{prec}f}j"
+        elif isinstance(v, (float, np.floating)):
+            return f"{v:.{prec}f}"
+        else:
+            return str(v)
+
+    # Handle scalar (0-dimensional array)
+    if array.ndim == 0:
+        latex_str = format_val(array.item(), precision)
+
+    # Handle 1D array (vector - displayed as column vector)
+    elif array.ndim == 1:
+        latex_str = "\\begin{bmatrix}"
+        values = [format_val(v, precision) for v in array]
+        latex_str += " \\\\ ".join(values)
+        latex_str += "\\end{bmatrix}"
+        # Add shape subscript if requested
+        if show_shape:
+            latex_str += f"_{{{array.shape[0]}}}"
+        # Apply arraystretch for vectors with more than one element
+        if len(array) > 1:
+            latex_str = f"{{\\def\\arraystretch{{{arrayStretch}}}{latex_str}}}"
+
+    # Handle 2D array (matrix)
+    elif array.ndim == 2:
+        n_rows, n_cols = array.shape
+        latex_str = "\\begin{bmatrix}"
+        rows = []
+        for i in range(n_rows):
+            row_vals = [format_val(array[i, j], precision) for j in range(n_cols)]
+            rows.append(" & ".join(row_vals))
+        latex_str += " \\\\ ".join(rows)
+        latex_str += "\\end{bmatrix}"
+        # Add shape subscript if requested
+        if show_shape:
+            latex_str += f"_{{{n_rows} \\times {n_cols}}}"
+        # Apply arraystretch for matrices
+        latex_str = f"{{\\def\\arraystretch{{{arrayStretch}}}{latex_str}}}"
+
+    else:
+        # For higher dimensions, fall back to text representation
+        latex_str = f"\\text{{{repr(array)}}}"
+
+    # Combine label and array, wrap in $$
+    full_latex = f"$$ {label}{latex_str} $$"
+
+    # Display using IPython
+    display(Latex(full_latex))

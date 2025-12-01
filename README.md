@@ -2,9 +2,22 @@
 
 Mathematical toolkit for teaching linear algebra and finite element methods (FEM). Provides:
 - **LaTeX rendering** for NumPy arrays in marimo notebooks
+- **Labeled LaTeX equations** with SymPy support for Jupyter notebooks
 - **1-based indexing** for FEM education (pedagogical bridge between math and code)
 - **Field management** for nodal, DOF, and element data
 - **Element-agnostic mesh** supporting multiple FEM element types
+- **MATLAB-style visualization** with `patch()` function
+
+## Recent Updates
+
+**December 2025:**
+- ✨ Added `show_shape` parameter to display array dimensions as subscript (e.g., `_{4 \times 2}`)
+- ✨ Added `display_labeled_latex()` function for Jupyter notebooks with labeled equations
+- ✨ SymPy integration - automatic detection and proper symbolic formatting (e.g., `cos(θ)` instead of `cos(theta)`)
+- ✨ Added `arrayStretch` parameter for customizable row spacing in matrices
+- 📁 Reorganized repository structure following Python standards
+- ✅ Added comprehensive test suite with pytest
+- 📚 Created example notebooks and documentation
 
 ## Installation
 
@@ -41,13 +54,63 @@ B = np.array([[5, 6], [7, 8]])
 np.dot([1, 2, 3], [4, 5, 6]) | la
 ```
 
+## Labeled LaTeX Display
+
+For Jupyter notebooks, use `display_labeled_latex` to show equations with labels:
+
+```python
+from matkit import display_labeled_latex
+import numpy as np
+
+# NumPy arrays with precision control
+A = np.array([[1.123, 2.456], [3.789, 4.012]])
+display_labeled_latex(r"\mathbf{A} = ", A, precision=2)
+
+# Control row spacing with arrayStretch
+display_labeled_latex(r"\mathbf{A} = ", A, precision=2, arrayStretch=2.0)
+```
+
+**SymPy Support** - Automatically detects and formats symbolic expressions:
+
+```python
+from sympy import symbols, cos, sin, Matrix
+
+theta = symbols('theta')
+R = Matrix([
+    [cos(theta), -sin(theta)],
+    [sin(theta),  cos(theta)]
+])
+
+# Renders with proper symbolic notation (cos(θ), sin(θ))
+display_labeled_latex(r"\mathbf{R}(\theta) = ", R, arrayStretch=1.8)
+```
+
+**Parameters:**
+- `label`: LaTeX string for the label (e.g., `r"\mathbf{A} = "`)
+- `array`: NumPy array or SymPy expression
+- `precision`: Decimal places for NumPy arrays (default: 2)
+- `arrayStretch`: Vertical row spacing multiplier (default: 1.5)
+- `show_shape`: Display array shape as subscript on matrix (default: False)
+
+**Example with shape display:**
+```python
+U = np.array([[0, 0], [2, -7.2], [1.6, -7.6], [0, 0]])
+display_labeled_latex("U = ", U, show_shape=True)
+# Displays: U = [matrix]_{4 × 2}
+```
+
+See `examples/notebooks/display_labeled_latex_examples.ipynb` for comprehensive examples.
+
 ## Features
 
 - **Automatic LaTeX rendering** for NumPy arrays in marimo notebooks
+- **Labeled equations** with `display_labeled_latex` for Jupyter notebooks
+- **SymPy integration** - Automatic detection and proper symbolic formatting
 - **Scalars, vectors (1D), and matrices (2D)** are all supported
 - **Intelligent truncation** for large arrays (>8 elements/dimension)
 - **Clean pipe syntax** for readable code: `array | la`
-- **Format preservation** for integers, floats (2 decimals), and complex numbers
+- **Format preservation** for integers, floats (customizable decimals), and complex numbers
+- **Adjustable spacing** with `arrayStretch` parameter for better readability
 
 ## Example Output
 
@@ -135,10 +198,207 @@ print(ELEMENT_TYPES)
 
 See `test_mesh.py` for comprehensive examples.
 
+## Visualization: MATLAB-Style `patch()` Function
+
+MatKit includes a `patch()` function that mimics MATLAB's patch behavior for mesh visualization. This is particularly useful for visualizing FEM meshes with field data.
+
+### Basic Usage
+
+```python
+import numpy as np
+from matkit import patch
+import matplotlib.pyplot as plt
+
+# Define mesh using Faces/Vertices notation
+vertices = np.array([[0, 0], [1, 0], [0.5, 0.866]])
+faces = np.array([[1, 2, 3]])  # 1-based indexing
+
+fig, ax = plt.subplots()
+patch('Faces', faces, 'Vertices', vertices,
+      'FaceColor', 'cyan',
+      'EdgeColor', 'black',
+      ax=ax)
+ax.axis('equal')
+plt.show()
+```
+
+### Key Features
+
+- **Faces/Vertices notation**: Primary interface matching MATLAB syntax
+- **1-based indexing**: Auto-detects and converts (faces starting at 1)
+- **Per-vertex color interpolation**: Smooth gradients using `FaceColor='interp'`
+- **Per-element flat colors**: Single color per element using `FaceColor='flat'`
+- **Line elements**: 2-vertex faces for truss/beam visualization
+- **Surface elements**: Triangles, quads in 2D/3D
+- **Transparency**: `FaceAlpha` and `EdgeAlpha` support
+- **Colormap support**: Any matplotlib colormap via `cmap` parameter
+
+### Color Data Examples
+
+**Per-vertex interpolation (smooth gradients):**
+```python
+# Temperature field at nodes
+node_temps = np.array([20.0, 100.0, 60.0, 80.0])
+
+patch('Faces', faces, 'Vertices', vertices,
+      'FaceVertexCData', node_temps,
+      'FaceColor', 'interp',
+      'EdgeColor', 'black',
+      'cmap', 'hot',
+      ax=ax)
+```
+
+**Per-element flat colors:**
+```python
+# Stress in each element
+element_stress = np.array([150, -80, 200, -120])
+
+patch('Faces', faces, 'Vertices', vertices,
+      'FaceVertexCData', element_stress,
+      'FaceColor', 'flat',
+      'EdgeColor', 'black',
+      'cmap', 'RdBu_r',  # Red=tension, Blue=compression
+      ax=ax)
+```
+
+### Truss Visualization
+
+```python
+# Define truss nodes and connectivity
+P = np.array([[0, 0], [500, 0], [300, 300], [600, 300]])
+edges = np.array([[1, 2], [1, 3], [2, 3], [2, 4], [3, 4]])
+
+# Visualize with element forces
+forces = np.array([6052.76, -5582.25, -7274.51, 6380.16, -9912.07])
+
+fig, ax = plt.subplots()
+patch('Faces', edges, 'Vertices', P,
+      'FaceVertexCData', forces,
+      'FaceColor', 'flat',
+      'LineWidth', 3,
+      'cmap', 'RdBu_r',
+      ax=ax)
+ax.axis('equal')
+plt.colorbar(ax.collections[0], ax=ax, label='Force (N)')
+```
+
+### Displacement Field Visualization
+
+```python
+# Original mesh
+P = np.array([[0, 0], [1, 0], [1, 1], [0, 1]])
+faces = np.array([[1, 2, 3, 4]])
+
+# Compute displacements (from FEM analysis)
+U = np.array([[0, 0], [0.1, 0], [0.15, -0.05], [0.05, -0.02]])
+U_mag = np.sqrt(np.sum(U**2, axis=1))
+
+# Plot deformed mesh with color-coded displacement magnitude
+P_deformed = P + U * scale_factor
+patch('Faces', faces, 'Vertices', P_deformed,
+      'FaceVertexCData', U_mag,
+      'FaceColor', 'interp',
+      'EdgeColor', 'black',
+      'cmap', 'jet',
+      ax=ax)
+plt.colorbar(ax.collections[0], label='Displacement')
+```
+
+### 3D Support
+
+```python
+# 3D truss
+P_3d = np.array([[0, 0, 0], [1, 0, 0], [0.5, 0.866, 0], [0.5, 0.433, 0.8]])
+edges_3d = np.array([[1, 2], [1, 3], [2, 3], [1, 4], [2, 4], [3, 4]])
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+patch('Faces', edges_3d, 'Vertices', P_3d,
+      'LineWidth', 2,
+      'cmap', 'viridis',
+      ax=ax)
+```
+
+### Implementation Details
+
+- Uses `matplotlib.tri.Triangulation` with Gouraud shading for true vertex color interpolation
+- Automatically subdivides quads into triangles for smooth color gradients
+- Draws edges separately as `LineCollection` to respect `EdgeColor` with interpolated faces
+- Supports 2D (`LineCollection`, `PolyCollection`) and 3D (`Line3DCollection`, `Poly3DCollection`)
+
+See `examples/patch_demo.py` and `examples/patch_advanced_demo.py` for comprehensive examples.
+
+## Repository Structure
+
+```
+MatKit/
+├── matkit/              # Source code
+│   ├── __init__.py
+│   ├── latex_array.py  # LaTeX rendering (la, display_labeled_latex)
+│   ├── mesh.py         # FEM mesh with 1-based indexing
+│   ├── patch.py        # MATLAB-style patch visualization
+│   └── one_array.py    # 1-based array wrapper
+├── tests/               # Automated tests (pytest)
+│   ├── test_latex_array.py
+│   ├── test_field_management.py
+│   └── test_seamless.py
+├── examples/            # User-facing examples
+│   ├── notebooks/      # Jupyter notebook tutorials
+│   ├── patch_demo.py
+│   └── patch_advanced_demo.py
+├── dev/                 # Development notes
+└── docs/                # Documentation (if needed)
+```
+
+## Testing
+
+Run automated tests using pytest:
+
+```bash
+# Install test dependencies
+pip install pytest pytest-cov
+
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=matkit --cov-report=html
+
+# Run specific tests
+pytest tests/test_latex_array.py -v
+```
+
+See `tests/README.md` for detailed testing documentation.
+
+## Examples
+
+Learn by example:
+
+```bash
+# Jupyter notebooks (recommended)
+jupyter notebook examples/notebooks/display_labeled_latex_examples.ipynb
+
+# Python scripts
+python examples/patch_demo.py
+```
+
+See `examples/README.md` for all available examples.
+
+### Tests vs Examples
+
+- **Tests** (`tests/`): Automated correctness checks with assertions, run in CI/CD
+- **Examples** (`examples/`): User-facing demonstrations showing real-world usage
+
+Both are important:
+- Tests ensure correctness and catch regressions
+- Examples teach usage patterns and provide context for AI-assisted development
+
 ## Development
 
-This allows editing the source code and have the changes immediately reflected in the environment, which is perfect for development.
+Install in editable mode for local development:
 
 ```bash
 uv pip install -e .
 ```
+
+This allows editing the source code and having changes immediately reflected in your environment.

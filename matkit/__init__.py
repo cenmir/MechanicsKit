@@ -11,6 +11,7 @@ This package provides:
 - OneArray: 1-based array wrapper for seamless FEM result handling
 - Iterator methods for clean, Pythonic 1-based workflows
 - Field management for nodal, DOF, and element data
+- MATLAB-style patch function for mesh visualization (patch)
 
 Philosophy:
 -----------
@@ -20,12 +21,14 @@ MatKit eliminates this translation burden through smart interface design.
 
 Think in mathematics. Code in Python. MatKit handles the translation.
 """
-from .latex_array import LatexArray, la
+from .latex_array import LatexArray, la, display_labeled_latex
 from .mesh import Mesh, ELEMENT_TYPES
 from .one_array import OneArray
+from .patch import patch
 
 __all__ = [
-    'LatexArray', 'la',
+    'LatexArray', 'la', 'display_labeled_latex',
     'Mesh', 'ELEMENT_TYPES',
     'OneArray',
+    'patch',
 ]
