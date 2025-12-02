@@ -16,7 +16,7 @@ from matplotlib.cm import get_cmap
 from mpl_toolkits.mplot3d.art3d import Line3DCollection, Poly3DCollection
 
 
-def patch(*args, ax=None, **kwargs):
+def patch(*args, ax=None, return_mappable=False, **kwargs):
     """
     Create colored patches using MATLAB-style syntax.
 
@@ -38,6 +38,12 @@ def patch(*args, ax=None, **kwargs):
 
     ax : matplotlib.axes.Axes, optional
         Axes to plot on. If None, uses current axes.
+
+    return_mappable : bool, default False
+        If True and color interpolation is used, returns a tuple
+        (collection, mappable) where mappable can be passed directly
+        to plt.colorbar(). This eliminates the need for manual
+        ScalarMappable creation. If False, returns only the collection.
 
     **kwargs : dict
         Additional properties (can also be passed as name-value pairs in args).
@@ -73,6 +79,8 @@ def patch(*args, ax=None, **kwargs):
     -------
     collection : LineCollection, PolyCollection, or Poly3DCollection
         The created patch object.
+    mappable : ScalarMappable (only if return_mappable=True and interpolation used)
+        Colorbar-compatible mappable object. Use with plt.colorbar(mappable, ...).
 
     Examples
     --------
@@ -89,6 +97,14 @@ def patch(*args, ax=None, **kwargs):
     >>> temps = np.array([20, 25, 30, 22])  # Temperature at each node
     >>> patch('Faces', edges, 'Vertices', P,
     ...       'FaceVertexCData', temps, 'FaceColor', 'interp')
+
+    Easy colorbar with return_mappable (no ScalarMappable boilerplate):
+
+    >>> collection, mappable = patch('Faces', edges, 'Vertices', P,
+    ...                               'FaceVertexCData', temps,
+    ...                               'FaceColor', 'interp',
+    ...                               return_mappable=True)
+    >>> plt.colorbar(mappable, label='Temperature (°C)')
 
     3D surface with transparency:
 
@@ -133,13 +149,13 @@ def patch(*args, ax=None, **kwargs):
 
     if n_vertices_per_face == 2:
         # Line elements (trusses, wireframes)
-        return _create_line_patch(ax, Faces, Vertices, params, ndim)
+        return _create_line_patch(ax, Faces, Vertices, params, ndim, return_mappable)
     else:
         # Surface elements (triangles, quads, etc.)
         if ndim == 2:
-            return _create_2d_surface_patch(ax, Faces, Vertices, params)
+            return _create_2d_surface_patch(ax, Faces, Vertices, params, return_mappable)
         else:
-            return _create_3d_surface_patch(ax, Faces, Vertices, params)
+            return _create_3d_surface_patch(ax, Faces, Vertices, params, return_mappable)
 
 
 def _parse_arguments(args, kwargs):
@@ -481,7 +497,7 @@ def _apply_alpha(colors, alpha):
     return colors
 
 
-def _create_line_patch(ax, Faces, Vertices, params, ndim):
+def _create_line_patch(ax, Faces, Vertices, params, ndim, return_mappable=False):
     """
     Create line patch (for trusses, wireframes).
 
@@ -497,19 +513,71 @@ def _create_line_patch(ax, Faces, Vertices, params, ndim):
     vmin = params['vmin']
     vmax = params['vmax']
 
-    # Process colors
-    colors = _process_colors(CData, n_faces, n_vertices, Faces, mode, cmap_name, vmin, vmax)
-
-    # Apply alpha
-    alpha = params['FaceAlpha']
-    colors = _apply_alpha(colors, alpha)
-
-    # Create line segments
-    segments = Vertices[Faces]  # (n_faces, 2, ndim)
-
     # Get edge properties
     linewidth = params['LineWidth']
     linestyle = params['LineStyle']
+    alpha = params['FaceAlpha']
+
+    # Check if we need true interpolation for line elements
+    need_interpolation = (mode == 'interp' and CData is not None and
+                         CData.shape[0] == n_vertices and CData.ndim == 1)
+
+    # Track colormap info for optional mappable return
+    mappable_info = None
+
+    if need_interpolation:
+        # Subdivide line elements for smooth color interpolation
+        n_segments_per_edge = 100  # Number of sub-segments per element
+
+        # Apply colormap to vertex data
+        norm = Normalize(
+            vmin=vmin if vmin is not None else CData.min(),
+            vmax=vmax if vmax is not None else CData.max()
+        )
+        cmap = get_cmap(cmap_name)
+
+        # Store for optional mappable return
+        if return_mappable:
+            mappable_info = (cmap, norm)
+
+        # Create subdivided segments with interpolated colors
+        segments = []
+        segment_colors = []
+
+        for face in Faces:
+            # Get vertex positions and color values
+            v1_pos = Vertices[face[0]]
+            v2_pos = Vertices[face[1]]
+            v1_color = CData[face[0]]
+            v2_color = CData[face[1]]
+
+            # Create interpolated segments
+            for i in range(n_segments_per_edge):
+                t1 = i / n_segments_per_edge
+                t2 = (i + 1) / n_segments_per_edge
+
+                # Interpolate positions
+                p1 = v1_pos * (1 - t1) + v2_pos * t1
+                p2 = v1_pos * (1 - t2) + v2_pos * t2
+
+                segments.append([p1, p2])
+
+                # Interpolate color value at segment midpoint
+                t_mid = (t1 + t2) / 2
+                c_mid = v1_color * (1 - t_mid) + v2_color * t_mid
+                segment_colors.append(cmap(norm(c_mid)))
+
+        segments = np.array(segments)
+        colors = np.array(segment_colors)
+
+        # Apply alpha
+        colors = _apply_alpha(colors, alpha)
+
+    else:
+        # Use flat colors (one color per element)
+        colors = _process_colors(CData, n_faces, n_vertices, Faces, mode, cmap_name, vmin, vmax)
+        colors = _apply_alpha(colors, alpha)
+        segments = Vertices[Faces]  # (n_faces, 2, ndim)
 
     if ndim == 2:
         # 2D lines
@@ -533,10 +601,18 @@ def _create_line_patch(ax, Faces, Vertices, params, ndim):
     # Update axis limits
     ax.autoscale_view()
 
-    return lc
+    # Return collection with optional mappable for colorbar
+    if return_mappable and mappable_info is not None:
+        import matplotlib.cm as cm
+        cmap, norm = mappable_info
+        mappable = cm.ScalarMappable(cmap=cmap, norm=norm)
+        mappable.set_array([])
+        return lc, mappable
+    else:
+        return lc
 
 
-def _create_2d_surface_patch(ax, Faces, Vertices, params):
+def _create_2d_surface_patch(ax, Faces, Vertices, params, return_mappable=False):
     """
     Create 2D surface patch using PolyCollection or TriMesh for interpolation.
     """
@@ -659,7 +735,7 @@ def _create_2d_surface_patch(ax, Faces, Vertices, params):
         return pc
 
 
-def _create_3d_surface_patch(ax, Faces, Vertices, params):
+def _create_3d_surface_patch(ax, Faces, Vertices, params, return_mappable=False):
     """
     Create 3D surface patch using Poly3DCollection.
     """

@@ -26,9 +26,32 @@ from .mesh import Mesh, ELEMENT_TYPES
 from .one_array import OneArray
 from .patch import patch
 
+# Version information
+__version__ = '0.1.1'
+
+def version():
+    """
+    Display MatKit version information.
+
+    Returns
+    -------
+    str
+        Version string
+
+    Examples
+    --------
+    >>> import matkit as mk
+    >>> mk.version()
+    'MatKit v0.1.1'
+    >>> mk.__version__
+    '0.1.1'
+    """
+    return f'MatKit v{__version__}'
+
 __all__ = [
     'LatexArray', 'la', 'display_labeled_latex',
     'Mesh', 'ELEMENT_TYPES',
     'OneArray',
     'patch',
+    'version',
 ]
