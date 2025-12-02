@@ -187,6 +187,10 @@ def display_labeled_latex(label, array, precision=2, arrayStretch=1.5, show_shap
     except (ImportError, AttributeError):
         pass  # SymPy not available, continue with NumPy handling
 
+    # Check if input is a OneArray and extract underlying data
+    if hasattr(array, 'data') and hasattr(array, '__class__') and array.__class__.__name__ == 'OneArray':
+        array = array.data
+
     array = np.asarray(array)
 
     # Helper to format numbers with specified precision
