@@ -1,115 +1,72 @@
 # MatKit Examples
 
-This directory contains examples demonstrating how to use MatKit features.
+Interactive Jupyter notebook examples demonstrating MatKit features for finite element analysis.
 
-## Directory Structure
-
-```
-examples/
-├── notebooks/              # Jupyter notebook examples
-│   ├── display_labeled_latex_examples.ipynb
-│   └── example1.ipynb
-├── patch_demo.py          # Basic patch visualization examples
-└── patch_advanced_demo.py # Advanced patch visualization examples
-```
-
-## Running Examples
-
-### Jupyter Notebooks
-
-The `notebooks/` directory contains interactive examples that are best viewed in Jupyter:
+## Quick Start
 
 ```bash
 # Install Jupyter if needed
 pip install jupyter
 
-# Start Jupyter and open a notebook
-jupyter notebook examples/notebooks/display_labeled_latex_examples.ipynb
+# Start Jupyter
+cd MatKit/examples/notebooks
+jupyter notebook
 ```
 
-### Python Scripts
+## Available Notebooks
 
-Run the Python examples directly:
+### [examples_patch.ipynb](notebooks/examples_patch.ipynb)
+Comprehensive guide to the `patch()` function for visualizing FEM meshes:
+- Basic truss visualization
+- Element-wise and nodal coloring (flat vs interpolated)
+- 2D and 3D elements (lines, triangles, quads)
+- Displacement fields and deformed shapes
+- Stress and temperature field visualization
+- Transparency and styling options
 
-```bash
-# Basic patch visualization
-python examples/patch_demo.py
+**Key features**: FaceColor modes, colormaps, transparency, multi-scale comparisons
 
-# Advanced patch features
-python examples/patch_advanced_demo.py
-```
+### [examples_mesh_onearray.ipynb](notebooks/examples_mesh_onearray.ipynb)
+Working with `Mesh` and `OneArray` for natural 1-based indexing:
+- OneArray basics (1-based element/node result arrays)
+- Creating and querying FEM meshes
+- Element types (ROD, TRIA3, QUAD4)
+- DOF management and iteration
+- Complete truss analysis workflow
+- Integration with patch() for visualization
 
-## Example Descriptions
+**Key features**: 1-based indexing, natural iteration, DOF mapping
 
-### `notebooks/display_labeled_latex_examples.ipynb`
-
-Comprehensive examples of the `display_labeled_latex` function showing:
+### [display_labeled_latex_examples.ipynb](notebooks/display_labeled_latex_examples.ipynb)
+Displaying mathematical expressions with LaTeX formatting:
 - Scalars, vectors, and matrices
-- Precision control
-- Row spacing adjustment with `arrayStretch`
+- Precision control and row spacing
 - SymPy symbolic expressions
 - Complex numbers
-- Real-world FEM applications
+- Array shape annotations
+- FEM-specific examples (stiffness matrices, transformations)
 
-### `notebooks/example1.ipynb`
+**Key features**: LaTeX rendering, precision control, SymPy integration
 
-Original MatKit example notebook demonstrating core features.
+## Topics Covered
 
-### `patch_demo.py`
+| Topic | Notebook |
+|-------|----------|
+| Mesh visualization | `examples_patch.ipynb` |
+| Element/nodal fields | `examples_patch.ipynb`, `examples_mesh_onearray.ipynb` |
+| 1-based indexing | `examples_mesh_onearray.ipynb` |
+| LaTeX output | `display_labeled_latex_examples.ipynb` |
+| Truss analysis | `examples_patch.ipynb`, `examples_mesh_onearray.ipynb` |
+| Displacement plots | `examples_patch.ipynb` |
 
-Basic truss visualization examples using the `patch` function:
-- Uniform color visualization
-- Element-wise coloring
-- Displacement visualization
-- Node labeling
+## Learning Path
 
-### `patch_advanced_demo.py`
+1. **New to MatKit?** Start with `display_labeled_latex_examples.ipynb` for basic output
+2. **FEM visualization?** See `examples_patch.ipynb` for plotting meshes and fields
+3. **Building FEM code?** Use `examples_mesh_onearray.ipynb` for mesh management
 
-Advanced visualization features:
-- 3D surface plots
-- Interpolated fields
-- Transparency and alpha values
-- Multiple scales and transformations
+## Need Help?
 
-## Creating New Examples
-
-When adding examples:
-
-1. **For tutorials**: Use Jupyter notebooks in `examples/notebooks/`
-2. **For code snippets**: Use Python scripts in `examples/`
-3. **Include docstrings**: Explain what the example demonstrates
-4. **Use realistic data**: Show practical use cases
-5. **Keep it simple**: Focus on one feature at a time
-6. **Add comments**: Explain non-obvious steps
-
-Example structure:
-
-```python
-"""
-Title: Brief Description
-========================
-
-Longer description of what this example demonstrates.
-"""
-
-# Step 1: Setup
-import numpy as np
-from matkit import display_labeled_latex
-
-# Step 2: Create data
-data = np.array([1, 2, 3])
-
-# Step 3: Display
-display_labeled_latex(r"\\mathbf{v} = ", data)
-```
-
-## Difference from Tests
-
-Examples differ from tests:
-
-- **Purpose**: Teaching and demonstration vs. correctness verification
-- **Focus**: Clarity and real-world usage vs. edge cases
-- **Output**: Visual results and explanations vs. pass/fail assertions
-- **Audience**: End users and learners vs. developers
-
-See the `tests/` directory for automated correctness tests.
+- Check the [main README](../README.md) for installation and API reference
+- See the [tests directory](../tests/) for additional usage patterns
+- Report issues at the repository issue tracker
