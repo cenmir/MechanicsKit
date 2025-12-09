@@ -41,20 +41,11 @@ B = np.array([[5, 6], [7, 8]])
 (A @ B) | la
 ```
 
-For Jupyter environments, the `display_labeled_latex` function offers a way to present expressions with formatted labels, which is useful for creating clear, readable examples in educational notebooks.
-
-```python
-from mechanicskit import display_labeled_latex
-from sympy import symbols, cos, sin, Matrix
-
-theta = symbols('theta')
-R = Matrix([
-    [cos(theta), -sin(theta)],
-    [sin(theta),  cos(theta)]
-])
-
-# Renders SymPy matrices with proper symbolic notation
-display_labeled_latex(r"\mathbf{R}(\theta) = ", R)
+```math
+\begin{bmatrix}
+19 & 22 \\
+43 & 50 
+\end{bmatrix}
 ```
 
 The renderer intelligently truncates large arrays to maintain readability.
@@ -82,6 +73,36 @@ While larger matrices are automatically truncated with ellipsis notation:
 \end{bmatrix}
 ```
 
+#### The display_labeled_latex() function
+
+For Jupyter environments, the `display_labeled_latex` function offers a way to present expressions with formatted labels, which is useful for creating clear, readable examples in educational notebooks.
+
+```python
+from mechanicskit import display_labeled_latex
+from sympy import symbols, cos, sin, Matrix
+
+theta = symbols('theta')
+R = Matrix([
+    [cos(theta), -sin(theta)],
+    [sin(theta),  cos(theta)]
+])
+
+# Renders SymPy matrices with proper symbolic notation
+display_labeled_latex(r"\mathbf{R}(\theta) = ", R)
+```
+
+```math
+\mathbf{R}(\theta) = \begin{bmatrix}
+\cos{\left(\theta \right)} & - \sin{\left(\theta \right)} \\
+\sin{\left(\theta \right)} & \cos{\left(\theta \right)}
+\end{bmatrix}
+```
+
+
+
+
+
+
 ### Pedagogical FEM Mesh Tools
 
 In finite element literature, nodes and connectivity are typically described using 1-based indexing. This creates a persistent conflict with Python's 0-based indexing, forcing students to perform mental translations that distract from the core FEM concepts.
@@ -99,18 +120,32 @@ mesh = Mesh(coords, connectivity, element_type='ROD')
 
 # Access node 3 directly (not index 2)
 coord = mesh.get_node(3)
+print(f"Coordinates of node 3: {coord}")
 
 # Get DOF indices for assembly
 # Returns [4, 5] for a 2D ROD element
 dofs = mesh.dofs_for_node(3)
+print(f"DOFs for node 3: {dofs}")
+
+ele = mesh.get_element(2)
+print(f"Element 2 connectivity (1-based): {ele[0]}")
 ```
+
+```
+Coordinates of node 3: [0. 1.]
+DOFs for node 3: [4 5]
+Element 2 connectivity (1-based): [1 3]
+```
+
 This approach reduces cognitive load and allows the code to more closely mirror textbook formulations. The mesh supports a variety of standard element types (e.g., `ROD`, `BEAM`, `TRIA3`, `QUAD4`).
 
-### MATLAB-style Visualization
+### Easy Visualization
 
-The library includes a `patch()` function that replicates MATLAB's versatile patch visualization capabilities. It is designed for visualizing FEM meshes and plotting scalar or vector field data on them. It uses a "Faces/Vertices" notation familiar to MATLAB users and supports 1-based indexing for connectivity data.
+The library includes a `patch()` function, inspired by MATLAB's versatile patch visualization capabilities. It is designed for visualizing FEM meshes and plotting scalar or vector field data on them. It uses a "Faces/Vertices" notation and supports 1-based indexing for connectivity data.
 
 Key functionalities include per-vertex color interpolation for smooth gradients, per-element flat colors, and support for various line and surface element types in 2D and 3D.
+
+
 
 ```python
 import numpy as np
@@ -135,6 +170,29 @@ ax.axis('equal')
 plt.colorbar(ax.collections[0], label='Displacement Magnitude')
 plt.show()
 ```
+
+![Deformed mesh visualization](assets/images/patch_deformed_mesh.png)
+
+
+The library also includes a `fplot()` function for plotting mathematical functions with SymPy expressions, providing a simple interface for visualizing functions in 1D.
+
+```python
+from mechanicskit import patch
+import sympy as sp
+
+x = sp.symbols('x')
+
+plt.figure(figsize=(8, 5))
+fplot(sp.exp(-x**2), range=(-3, 3), color='red', linewidth=2, label='Gaussian')
+plt.xlabel('x')
+plt.ylabel('y')
+plt.grid(True, alpha=0.3)
+plt.legend()
+plt.show()
+```
+
+![Function plot example](assets/images/fplot_example.png)
+
 
 ## Update History
 
