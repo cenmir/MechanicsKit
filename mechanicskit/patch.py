@@ -543,34 +543,9 @@ def _create_line_patch(ax, Faces, Vertices, params, ndim, return_mappable=False)
             mappable_info = (cmap, norm)
 
         # Create subdivided segments with interpolated colors
-        segments = []
-        segment_colors = []
-
-        for face in Faces:
-            # Get vertex positions and color values
-            v1_pos = Vertices[face[0]]
-            v2_pos = Vertices[face[1]]
-            v1_color = CData[face[0]]
-            v2_color = CData[face[1]]
-
-            # Create interpolated segments
-            for i in range(n_segments_per_edge):
-                t1 = i / n_segments_per_edge
-                t2 = (i + 1) / n_segments_per_edge
-
-                # Interpolate positions
-                p1 = v1_pos * (1 - t1) + v2_pos * t1
-                p2 = v1_pos * (1 - t2) + v2_pos * t2
-
-                segments.append([p1, p2])
-
-                # Interpolate color value at segment midpoint
-                t_mid = (t1 + t2) / 2
-                c_mid = v1_color * (1 - t_mid) + v2_color * t_mid
-                segment_colors.append(cmap(norm(c_mid)))
-
-        segments = np.array(segments)
-        colors = np.array(segment_colors)
+        segments, colors = colormap_utils._generate_interpolated_line_colors_and_segments(
+            CData, Faces, Vertices, n_segments_per_edge, cmap, norm
+        )
 
         # Apply alpha
         colors = _apply_alpha(colors, alpha)
@@ -605,11 +580,22 @@ def _create_line_patch(ax, Faces, Vertices, params, ndim, return_mappable=False)
 
     # Store state for automatic colorbar
     if CData is not None:
-        colormap_utils._store_patch_state(
-            collection=lc,
-            cdata=np.asarray(CData),
-            ax=ax
-        )
+        if need_interpolation:
+            colormap_utils._store_patch_state(
+                collection=lc,
+                cdata=np.asarray(CData),
+                ax=ax,
+                faces=Faces,
+                vertices=Vertices,
+                mode='interp',
+                n_segments_per_edge=n_segments_per_edge
+            )
+        else:
+            colormap_utils._store_patch_state(
+                collection=lc,
+                cdata=np.asarray(CData),
+                ax=ax
+            )
 
     # Return collection with optional mappable for colorbar
     if return_mappable and mappable_info is not None:
@@ -641,28 +627,65 @@ def _create_2d_surface_patch(ax, Faces, Vertices, params, return_mappable=False)
                          CData.shape[0] == n_vertices)
 
     if need_interpolation:
-        # Use matplotlib's tripcolor for true vertex color interpolation
         from matplotlib.tri import Triangulation
 
-        # Subdivide faces into triangles
-        triangles = _subdivide_to_triangles(Faces)
+        # If we have quads, subdivide them into 4 triangles meeting at the centroid
+        # to get a better approximation of bilinear interpolation.
+        if Faces.shape[1] == 4:
+            new_faces = []
+            
+            # Start with original vertices and CData, ready to append new ones
+            new_vertices_list = list(Vertices)
+            new_cdata_list = list(CData)
+            
+            for face in Faces:
+                # Get the coordinates and color data for the 4 vertices of the quad
+                p1, p2, p3, p4 = Vertices[face]
+                c1, c2, c3, c4 = CData[face]
+                
+                # Calculate the centroid position and color
+                centroid_pos = np.mean([p1, p2, p3, p4], axis=0)
+                centroid_cdata = np.mean([c1, c2, c3, c4])
+                
+                # The index of our new centroid vertex
+                centroid_idx = len(new_vertices_list)
+                
+                # Add the new vertex and its color to our lists
+                new_vertices_list.append(centroid_pos)
+                new_cdata_list.append(centroid_cdata)
+                
+                # Create 4 new triangles that meet at the centroid
+                new_faces.append([face[0], face[1], centroid_idx])
+                new_faces.append([face[1], face[2], centroid_idx])
+                new_faces.append([face[2], face[3], centroid_idx])
+                new_faces.append([face[3], face[0], centroid_idx])
+
+            # Convert lists to numpy arrays for triangulation
+            triangles = np.array(new_faces)
+            Final_Vertices = np.array(new_vertices_list)
+            Final_CData = np.array(new_cdata_list)
+        
+        else: # For non-quads, use the original simple triangulation
+            triangles = _subdivide_to_triangles(Faces)
+            Final_Vertices = Vertices
+            Final_CData = CData
 
         # Create triangulation
-        x = Vertices[:, 0]
-        y = Vertices[:, 1]
+        x = Final_Vertices[:, 0]
+        y = Final_Vertices[:, 1]
 
         # Process vertex colors
-        if CData.ndim == 1:
+        if Final_CData.ndim == 1:
             # Scalar data - will be mapped through colormap
-            vertex_colors = CData
-        elif CData.ndim == 2 and CData.shape[1] == 3:
+            vertex_colors = Final_CData
+        elif Final_CData.ndim == 2 and Final_CData.shape[1] == 3:
             # RGB data - need to use scalar representation
             # Convert RGB to grayscale for triangulation
-            vertex_colors = 0.299 * CData[:, 0] + 0.587 * CData[:, 1] + 0.114 * CData[:, 2]
+            vertex_colors = 0.299 * Final_CData[:, 0] + 0.587 * Final_CData[:, 1] + 0.114 * Final_CData[:, 2]
         else:
-            vertex_colors = CData
+            vertex_colors = Final_CData
 
-        # Create triangulation
+        # Create triangulation object
         triang = Triangulation(x, y, triangles)
 
         # Normalize colors
@@ -688,17 +711,14 @@ def _create_2d_surface_patch(ax, Faces, Vertices, params, return_mappable=False)
 
         # Draw original face edges separately if needed
         if edge_color != 'none':
-            # Create edge segments from original faces (not subdivided triangles)
             edge_segments = []
             for face in Faces:
-                # Create closed polygon by connecting vertices in order
                 face_verts = Vertices[face]
                 for i in range(len(face)):
                     v1 = face_verts[i]
                     v2 = face_verts[(i + 1) % len(face)]
                     edge_segments.append([v1, v2])
 
-            # Draw edges
             lc = LineCollection(edge_segments,
                               colors=edge_color,
                               linewidths=linewidth,
@@ -713,7 +733,10 @@ def _create_2d_surface_patch(ax, Faces, Vertices, params, return_mappable=False)
             colormap_utils._store_patch_state(
                 collection=tc,
                 cdata=np.asarray(CData),
-                ax=ax
+                ax=ax,
+                mode='interp',
+                faces=Faces,
+                vertices=Vertices
             )
 
         if return_mappable:
@@ -816,7 +839,8 @@ def _create_3d_surface_patch(ax, Faces, Vertices, params, return_mappable=False)
         colormap_utils._store_patch_state(
             collection=pc,
             cdata=np.asarray(CData),
-            ax=ax
+            ax=ax,
+            mode=face_mode
         )
 
     return pc
