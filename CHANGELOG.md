@@ -23,14 +23,63 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **Intelligent color interpolation for 2D surface patches**
+  - `patch()` now automatically selects between `tricontourf` and `tripcolor` for optimal visual quality
+  - New `interpolation_method='auto'` parameter (default) intelligently chooses rendering method:
+    - Uses `tricontourf` (256 levels) for small meshes (<100 elements) with non-linear colormaps (jet, hsv, hot, etc.)
+    - Uses `tripcolor` (Gouraud shading) for large meshes or linear colormaps (viridis, plasma, etc.)
+  - Manual override available: `interpolation_method='tricontourf'` or `'tripcolor'`
+  - Non-linear colormap detection for 30+ common colormaps
+  - Eliminates RGB interpolation artifacts with non-linear colormaps
+  - Maintains performance for large FEM meshes while ensuring quality for instructional plots
+
+- **Enhanced `colorbar()` function with automatic parameter retrieval**
+  - Zero-argument usage: `mk.colorbar()` automatically retrieves colormap and limits from last `patch()` call
+  - Eliminates need for manual `ScalarMappable` creation and parameter repetition
+  - **Automatic discrete/continuous colorbar selection**:
+    - Flat colors (per-element data): Creates discrete colorbar with distinct color bands using `BoundaryNorm`
+    - Interpolated colors (FaceColor='interp'): Creates continuous colorbar with smooth gradients
+    - Discrete colorbar boundaries are automatically placed at midpoints between unique data values
+    - Perfectly matches the actual element colors shown in the patch
+  - Supports both `limits=[vmin, vmax]` and `clims=[vmin, vmax]` (MATLAB compatibility)
+  - New parameters: `ticks`, `orientation`, `extend`, `format` for complete control
+  - Backward compatible with existing code
+  - Example: `mk.patch(..., 'cmap', 'jet')` then `mk.colorbar()` - automatically uses jet!
+
 - `patch()` now supports `return_mappable=True` parameter for easy colorbar creation
   - Returns tuple `(collection, mappable)` when `FaceColor='interp'` is used
   - Eliminates need for manual ScalarMappable/Normalize boilerplate
   - Example: `collection, mappable = mk.patch(..., return_mappable=True)` then `plt.colorbar(mappable)`
 
 ### Changed
+- **Breaking improvement**: When `FaceColor='interp'`, smooth interpolation is always used
+  - The `Shading` parameter is now only relevant for non-interpolated rendering
+  - `tripcolor` always uses `shading='gouraud'` for interpolation mode
+  - `tricontourf` always uses 256 levels for smooth gradients
+
+- `patch()` internal state storage enhanced
+  - Now stores `cmap`, `vmin`, `vmax` for automatic colorbar retrieval
+  - Updated `_store_patch_state()` signature to include colormap information
 
 ### Fixed
+- **CRITICAL**: Fixed missing `_create_quad_with_pcolormesh()` function
+  - Removed broken reference that caused crashes
+  - Replaced with proper `tricontourf`/`tripcolor` implementation
+  - All 2D surface interpolation now works correctly
+
+- **Fixed `EdgeAlpha` parameter implementation**
+  - `EdgeAlpha` was defined but not properly applied in all patch modes
+  - Now correctly controls edge transparency independently of `FaceAlpha`
+  - Enhanced `_apply_alpha()` helper to handle both color arrays and single colors
+  - Works with all patch types: 2D surfaces, 3D surfaces, and line elements
+  - Example: `mk.patch(..., 'EdgeColor', 'red', 'EdgeAlpha', 0.3)` creates semi-transparent edges
+
+- **Fixed crash when all vertex values are identical** (vmin == vmax edge case)
+  - `tricontourf` requires strictly increasing contour levels
+  - When all values are the same, `np.linspace(vmin, vmax, 256)` creates constant levels
+  - Now adds small epsilon (1% of value or 1.0 if zero) to create valid range
+  - Prevents `ValueError: "Contour levels must be increasing"` crash
+  - Example: mesh with uniform temperature field no longer crashes
 
 ## [0.1.1] - 2025-12-02
 

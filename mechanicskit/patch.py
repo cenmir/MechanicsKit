@@ -18,6 +18,42 @@ from mpl_toolkits.mplot3d.art3d import Line3DCollection, Poly3DCollection
 from . import colormap_utils
 
 
+# List of common non-linear colormaps
+# These colormaps have non-uniform perceptual gradients and benefit from
+# tricontourf's contour-based approach over tripcolor's linear RGB interpolation
+_NONLINEAR_COLORMAPS = {
+    'jet', 'hsv', 'rainbow', 'gist_rainbow', 'gist_ncar',
+    'nipy_spectral', 'gnuplot', 'gnuplot2', 'gist_stern',
+    'hot', 'cool', 'spring', 'summer', 'autumn', 'winter',
+    'copper', 'flag', 'prism', 'ocean', 'gist_earth', 'terrain',
+    'gist_heat', 'CMRmap', 'cubehelix', 'brg', 'bwr', 'seismic',
+    'twilight', 'twilight_shifted', 'hsv'
+}
+
+
+def _is_nonlinear_colormap(cmap_name):
+    """
+    Check if a colormap is non-linear (non-uniform perceptual gradient).
+
+    Non-linear colormaps benefit from tricontourf's approach of applying
+    the colormap after interpolation, rather than tripcolor's approach of
+    interpolating RGB values directly.
+
+    Parameters
+    ----------
+    cmap_name : str
+        Name of the colormap.
+
+    Returns
+    -------
+    bool
+        True if colormap is non-linear.
+    """
+    # Handle reversed colormaps (e.g., 'jet_r')
+    base_name = cmap_name.replace('_r', '')
+    return base_name.lower() in _NONLINEAR_COLORMAPS
+
+
 def patch(*args, ax=None, return_mappable=False, **kwargs):
     """
     Create colored patches using MATLAB-style syntax.
@@ -68,6 +104,9 @@ def patch(*args, ax=None, return_mappable=False, **kwargs):
             Can be scalar or per-face array.
         - EdgeColor : str or RGB, default 'black'
             Edge color specification.
+        - EdgeAlpha : float, default 1.0
+            Edge transparency (0=transparent, 1=opaque).
+            Controls edge opacity independently of FaceAlpha.
         - LineWidth : float, default 1.0
             Edge line width.
         - LineStyle : str, default '-'
@@ -76,6 +115,20 @@ def patch(*args, ax=None, return_mappable=False, **kwargs):
             Colormap for scalar color data.
         - vmin, vmax : float, optional
             Color normalization limits.
+        - Shading : str, default 'flat'
+            Shading mode for interpolated surface patches: 'flat' or 'gouraud'.
+            'flat' shows discrete color bands (MATLAB-like), 'gouraud' shows smooth gradients.
+            Note: When FaceColor='interp', smooth interpolation is always used.
+        - interpolation_method : str, default 'auto'
+            Method for color interpolation on 2D surface patches with FaceColor='interp':
+            - 'auto': Automatically select based on mesh size and colormap.
+              Uses 'tricontourf' for small meshes (<100 elements) with non-linear
+              colormaps (e.g., 'jet'), otherwise uses 'tripcolor' for performance.
+            - 'tricontourf': Use contour-filled triangulation (high quality, slower).
+              Better visual accuracy for non-linear colormaps.
+            - 'tripcolor': Use Gouraud-shaded triangulation (fast, hardware-accelerated).
+              Interpolates RGB values directly, which can produce visual artifacts
+              with non-linear colormaps.
 
     Returns
     -------
@@ -182,6 +235,8 @@ def _parse_arguments(args, kwargs):
         'cmap': 'viridis',
         'vmin': None,
         'vmax': None,
+        'Shading': 'flat',
+        'interpolation_method': 'auto',
     }
 
     # Check if first argument is a string (MATLAB-style name-value pairs)
@@ -205,6 +260,8 @@ def _parse_arguments(args, kwargs):
                     'linewidth': 'LineWidth',
                     'linestyle': 'LineStyle',
                     'edgealpha': 'EdgeAlpha',
+                    'shading': 'Shading',
+                    'interpolation_method': 'interpolation_method',
                 }
 
                 canonical_key = key_map.get(key_lower, key)
@@ -473,16 +530,30 @@ def _apply_alpha(colors, alpha):
 
     Parameters
     ----------
-    colors : array (n, 4)
-        RGBA colors.
+    colors : array (n, 4) or str or tuple
+        RGBA colors array, color name, or RGB tuple.
     alpha : float or array
         Alpha values.
 
     Returns
     -------
-    colors : array (n, 4)
-        Colors with updated alpha.
+    colors : array (n, 4) or tuple
+        Colors with updated alpha. Returns tuple (r,g,b,a) for single color input,
+        array for multiple colors.
     """
+    # Handle string color names or RGB tuples (for single edge colors)
+    if isinstance(colors, str) or (isinstance(colors, (tuple, list)) and len(colors) in [3, 4]):
+        from matplotlib.colors import to_rgba
+        rgba = to_rgba(colors)
+        # Apply alpha
+        if np.isscalar(alpha):
+            return (rgba[0], rgba[1], rgba[2], alpha)
+        else:
+            # Single color with array of alphas - not typical use case
+            return (rgba[0], rgba[1], rgba[2], alpha[0] if len(alpha) > 0 else rgba[3])
+
+    # Handle array of colors
+    colors = np.asarray(colors)
     colors = colors.copy()
 
     if np.isscalar(alpha):
@@ -588,13 +659,19 @@ def _create_line_patch(ax, Faces, Vertices, params, ndim, return_mappable=False)
                 faces=Faces,
                 vertices=Vertices,
                 mode='interp',
-                n_segments_per_edge=n_segments_per_edge
+                n_segments_per_edge=n_segments_per_edge,
+                cmap=cmap_name,
+                vmin=vmin,
+                vmax=vmax
             )
         else:
             colormap_utils._store_patch_state(
                 collection=lc,
                 cdata=np.asarray(CData),
-                ax=ax
+                ax=ax,
+                cmap=cmap_name,
+                vmin=vmin,
+                vmax=vmax
             )
 
     # Return collection with optional mappable for colorbar
@@ -610,7 +687,10 @@ def _create_line_patch(ax, Faces, Vertices, params, ndim, return_mappable=False)
 
 def _create_2d_surface_patch(ax, Faces, Vertices, params, return_mappable=False):
     """
-    Create 2D surface patch using PolyCollection or TriMesh for interpolation.
+    Create 2D surface patch using PolyCollection, tripcolor, or tricontourf.
+
+    For FaceColor='interp', automatically selects between tripcolor and tricontourf
+    based on mesh size and colormap linearity for optimal visual quality.
     """
     n_faces = Faces.shape[0]
     n_vertices = Vertices.shape[0]
@@ -621,93 +701,85 @@ def _create_2d_surface_patch(ax, Faces, Vertices, params, return_mappable=False)
     cmap_name = params['cmap']
     vmin = params['vmin']
     vmax = params['vmax']
+    interpolation_method = params['interpolation_method']
 
     # Check if we need true interpolation
     need_interpolation = (face_mode == 'interp' and CData is not None and
-                         CData.shape[0] == n_vertices)
+                         CData.shape[0] == n_vertices and CData.ndim == 1)
 
     if need_interpolation:
+        # Decide whether to use tricontourf or tripcolor
+        use_tricontourf = False
+
+        if interpolation_method == 'tricontourf':
+            use_tricontourf = True
+        elif interpolation_method == 'tripcolor':
+            use_tricontourf = False
+        elif interpolation_method == 'auto':
+            # Auto-select: use tricontourf for small meshes with non-linear colormaps
+            is_small_mesh = n_faces < 100
+            is_nonlinear_cmap = _is_nonlinear_colormap(cmap_name)
+            use_tricontourf = is_small_mesh and is_nonlinear_cmap
+        else:
+            raise ValueError(
+                f"Invalid interpolation_method '{interpolation_method}'. "
+                "Must be 'auto', 'tricontourf', or 'tripcolor'."
+            )
+
+        # Import triangulation tools
         from matplotlib.tri import Triangulation
 
-        # If we have quads, subdivide them into 4 triangles meeting at the centroid
-        # to get a better approximation of bilinear interpolation.
-        if Faces.shape[1] == 4:
-            new_faces = []
-            
-            # Start with original vertices and CData, ready to append new ones
-            new_vertices_list = list(Vertices)
-            new_cdata_list = list(CData)
-            
-            for face in Faces:
-                # Get the coordinates and color data for the 4 vertices of the quad
-                p1, p2, p3, p4 = Vertices[face]
-                c1, c2, c3, c4 = CData[face]
-                
-                # Calculate the centroid position and color
-                centroid_pos = np.mean([p1, p2, p3, p4], axis=0)
-                centroid_cdata = np.mean([c1, c2, c3, c4])
-                
-                # The index of our new centroid vertex
-                centroid_idx = len(new_vertices_list)
-                
-                # Add the new vertex and its color to our lists
-                new_vertices_list.append(centroid_pos)
-                new_cdata_list.append(centroid_cdata)
-                
-                # Create 4 new triangles that meet at the centroid
-                new_faces.append([face[0], face[1], centroid_idx])
-                new_faces.append([face[1], face[2], centroid_idx])
-                new_faces.append([face[2], face[3], centroid_idx])
-                new_faces.append([face[3], face[0], centroid_idx])
-
-            # Convert lists to numpy arrays for triangulation
-            triangles = np.array(new_faces)
-            Final_Vertices = np.array(new_vertices_list)
-            Final_CData = np.array(new_cdata_list)
-        
-        else: # For non-quads, use the original simple triangulation
-            triangles = _subdivide_to_triangles(Faces)
-            Final_Vertices = Vertices
-            Final_CData = CData
+        # Subdivide quads and polygons into triangles
+        triangles = _subdivide_to_triangles(Faces)
 
         # Create triangulation
-        x = Final_Vertices[:, 0]
-        y = Final_Vertices[:, 1]
-
-        # Process vertex colors
-        if Final_CData.ndim == 1:
-            # Scalar data - will be mapped through colormap
-            vertex_colors = Final_CData
-        elif Final_CData.ndim == 2 and Final_CData.shape[1] == 3:
-            # RGB data - need to use scalar representation
-            # Convert RGB to grayscale for triangulation
-            vertex_colors = 0.299 * Final_CData[:, 0] + 0.587 * Final_CData[:, 1] + 0.114 * Final_CData[:, 2]
-        else:
-            vertex_colors = Final_CData
-
-        # Create triangulation object
+        x = Vertices[:, 0]
+        y = Vertices[:, 1]
         triang = Triangulation(x, y, triangles)
 
         # Normalize colors
-        norm = Normalize(
-            vmin=vmin if vmin is not None else vertex_colors.min(),
-            vmax=vmax if vmax is not None else vertex_colors.max()
-        )
+        vmin_val = vmin if vmin is not None else CData.min()
+        vmax_val = vmax if vmax is not None else CData.max()
 
-        # Get edge parameters
+        # Handle edge case: all values are the same (vmin == vmax)
+        # This would create invalid contour levels or normalization
+        if vmin_val == vmax_val:
+            # Add small epsilon to create a valid range
+            # Use 1% of the value or 1.0 if value is zero
+            epsilon = abs(vmin_val) * 0.01 if vmin_val != 0 else 1.0
+            vmax_val = vmin_val + epsilon
+
+        norm = Normalize(vmin=vmin_val, vmax=vmax_val)
+
+        # Get parameters
         edge_color = params['EdgeColor']
         linewidth = params['LineWidth']
         linestyle = params['LineStyle']
         edge_alpha = params['EdgeAlpha']
         face_alpha = params['FaceAlpha']
-
-        # Use tripcolor for smooth interpolation (without edges)
         cmap = get_cmap(cmap_name)
-        tc = ax.tripcolor(triang, vertex_colors,
-                         cmap=cmap,
-                         norm=norm,
-                         shading='gouraud',  # Smooth interpolation
-                         alpha=face_alpha if np.isscalar(face_alpha) else None)
+
+        if use_tricontourf:
+            # Use tricontourf for high-quality interpolation
+            # Always use 256 levels for smooth gradients
+            levels = np.linspace(vmin_val, vmax_val, 256)
+            tc = ax.tricontourf(triang, CData, levels=levels, cmap=cmap,
+                               norm=norm)
+
+            # tricontourf doesn't support alpha directly on the collection
+            # Apply alpha to all polygons if needed
+            if face_alpha != 1.0:
+                for collection in tc.collections:
+                    collection.set_alpha(face_alpha)
+
+        else:
+            # Use tripcolor with gouraud shading for performance
+            # When FaceColor='interp', always use smooth shading
+            tc = ax.tripcolor(triang, CData,
+                             cmap=cmap,
+                             norm=norm,
+                             shading='gouraud',
+                             alpha=face_alpha if np.isscalar(face_alpha) else None)
 
         # Draw original face edges separately if needed
         if edge_color != 'none':
@@ -729,20 +801,23 @@ def _create_2d_surface_patch(ax, Faces, Vertices, params, return_mappable=False)
         ax.autoscale_view()
 
         # Store state for automatic colorbar
-        if CData is not None:
-            colormap_utils._store_patch_state(
-                collection=tc,
-                cdata=np.asarray(CData),
-                ax=ax,
-                mode='interp',
-                faces=Faces,
-                vertices=Vertices
-            )
+        colormap_utils._store_patch_state(
+            collection=tc,
+            cdata=np.asarray(CData),
+            ax=ax,
+            mode='interp',
+            faces=Faces,
+            vertices=Vertices,
+            cmap=cmap_name,
+            vmin=vmin,
+            vmax=vmax
+        )
 
         if return_mappable:
             return tc, tc
         else:
             return tc
+
     else:
         # Use PolyCollection for flat colors or uniform colors
         # Process face colors
@@ -761,6 +836,10 @@ def _create_2d_surface_patch(ax, Faces, Vertices, params, return_mappable=False)
         linestyle = params['LineStyle']
         edge_alpha = params['EdgeAlpha']
 
+        # Apply edge alpha to edge color
+        if edge_color != 'none' and edge_alpha != 1.0:
+            edge_color = _apply_alpha(edge_color, edge_alpha)
+
         # Create polygon vertices
         verts = [Vertices[face] for face in Faces]
 
@@ -770,8 +849,7 @@ def _create_2d_surface_patch(ax, Faces, Vertices, params, return_mappable=False)
             facecolors=face_colors,
             edgecolors=edge_color,
             linewidths=linewidth,
-            linestyles=linestyle,
-            alpha=edge_alpha if face_mode == 'none' else None
+            linestyles=linestyle
         )
 
         ax.add_collection(pc)
@@ -782,7 +860,10 @@ def _create_2d_surface_patch(ax, Faces, Vertices, params, return_mappable=False)
             colormap_utils._store_patch_state(
                 collection=pc,
                 cdata=np.asarray(CData),
-                ax=ax
+                ax=ax,
+                cmap=cmap_name,
+                vmin=vmin,
+                vmax=vmax
             )
 
         return pc
@@ -815,6 +896,11 @@ def _create_3d_surface_patch(ax, Faces, Vertices, params, return_mappable=False)
     # Get edge parameters
     edge_color = params['EdgeColor']
     linewidth = params['LineWidth']
+    edge_alpha = params['EdgeAlpha']
+
+    # Apply edge alpha to edge color
+    if edge_color != 'none' and edge_alpha != 1.0:
+        edge_color = _apply_alpha(edge_color, edge_alpha)
 
     # Create polygon vertices
     verts = [Vertices[face] for face in Faces]
@@ -840,7 +926,10 @@ def _create_3d_surface_patch(ax, Faces, Vertices, params, return_mappable=False)
             collection=pc,
             cdata=np.asarray(CData),
             ax=ax,
-            mode=face_mode
+            mode=face_mode,
+            cmap=cmap_name,
+            vmin=vmin,
+            vmax=vmax
         )
 
     return pc

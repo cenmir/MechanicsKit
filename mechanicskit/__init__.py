@@ -1,5 +1,5 @@
 """
-MatKit - Mathematical Toolkit for Engineering Education
+MechanicsKit - Mathematical Toolkit for Engineering Education
 
 A pedagogical package for linear algebra and FEM that bridges mathematical notation
 and Python implementation through 1-based indexing and LaTeX rendering.
@@ -18,9 +18,9 @@ Philosophy:
 -----------
 Students think in mathematical notation (nodes 1, 2, 3..., DOFs 1, 2, 3...).
 Python uses 0-based indexing (indices 0, 1, 2...).
-MatKit eliminates this translation burden through smart interface design.
+MechanicsKit eliminates this translation burden through smart interface design.
 
-Think in mathematics. Code in Python. MatKit handles the translation.
+Think in mathematics. Code in Python. MechanicsKit handles the translation.
 """
 from .latex_array import LatexArray, la, display_labeled_latex
 from .mesh import Mesh, ELEMENT_TYPES
@@ -34,7 +34,7 @@ __version__ = '0.1.1'
 
 def version():
     """
-    Display MatKit version information.
+    Display MechanicsKit version information.
 
     Returns
     -------
@@ -45,11 +45,11 @@ def version():
     --------
     >>> import mechanicskit as mk
     >>> mk.version()
-    'MatKit v0.1.1'
+    'MechanicsKit v0.1.1'
     >>> mk.__version__
     '0.1.1'
     """
-    return f'MatKit v{__version__}'
+    return f'MechanicsKit v{__version__}'
 
 __all__ = [
     'LatexArray', 'la', 'display_labeled_latex',
