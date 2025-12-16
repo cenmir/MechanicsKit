@@ -56,7 +56,7 @@ def _is_nonlinear_colormap(cmap_name):
 
 def patch(*args, ax=None, return_mappable=False, **kwargs):
     """
-    Create colored patches using MATLAB-style syntax.
+    Create colored patches using MATLAB-style or Pythonic syntax.
 
     This function recreates MATLAB's patch functionality in matplotlib,
     with primary support for the Faces/Vertices notation commonly used
@@ -67,7 +67,7 @@ def patch(*args, ax=None, return_mappable=False, **kwargs):
     *args : variable
         MATLAB-style name-value pairs or direct coordinates.
 
-        Faces/Vertices notation (primary):
+        Faces/Vertices notation (MATLAB-style):
             patch('Faces', F, 'Vertices', V, ...)
 
         Direct coordinate notation:
@@ -85,18 +85,20 @@ def patch(*args, ax=None, return_mappable=False, **kwargs):
 
     **kwargs : dict
         Additional properties (can also be passed as name-value pairs in args).
+        Supports both MATLAB-style and Pythonic naming conventions.
 
         Core properties:
         - Faces : array (n_faces, n_vertices_per_face)
             Face connectivity. Can be 1-based (auto-detected) or 0-based.
         - Vertices : array (n_vertices, ndim)
             Vertex coordinates (2D or 3D).
-        - FaceVertexCData : array
+        - FaceVertexCData or CData : array
             Color data. Shape determines mode:
             - (n_vertices,): per-vertex colors (interpolated)
             - (n_faces,): per-face colors (flat)
             - (n_vertices, 3): per-vertex RGB
             - (n_faces, 3): per-face RGB
+            Note: CData is a Pythonic alias for FaceVertexCData.
         - FaceColor : str or RGB, default 'flat'
             'flat', 'interp', 'none', RGB tuple, or color name.
         - FaceAlpha : float or array, default 1.0
@@ -139,7 +141,7 @@ def patch(*args, ax=None, return_mappable=False, **kwargs):
 
     Examples
     --------
-    Truss with per-element colors:
+    MATLAB-style syntax:
 
     >>> P = np.array([[0, 0], [500, 0], [300, 300], [600, 300]])
     >>> edges = np.array([[1, 2], [1, 3], [2, 3], [2, 4], [3, 4]])
@@ -147,18 +149,16 @@ def patch(*args, ax=None, return_mappable=False, **kwargs):
     >>> patch('Faces', edges, 'Vertices', P,
     ...       'FaceVertexCData', forces, 'LineWidth', 3)
 
-    Truss with interpolated nodal colors:
+    Pythonic keyword argument syntax:
 
-    >>> temps = np.array([20, 25, 30, 22])  # Temperature at each node
-    >>> patch('Faces', edges, 'Vertices', P,
-    ...       'FaceVertexCData', temps, 'FaceColor', 'interp')
+    >>> temps = np.array([20, 25, 30, 22])
+    >>> patch(Faces=edges, Vertices=P, CData=temps,
+    ...       FaceColor='interp', cmap='jet')
 
-    Easy colorbar with return_mappable (no ScalarMappable boilerplate):
+    Easy colorbar with return_mappable:
 
-    >>> collection, mappable = patch('Faces', edges, 'Vertices', P,
-    ...                               'FaceVertexCData', temps,
-    ...                               'FaceColor', 'interp',
-    ...                               return_mappable=True)
+    >>> collection, mappable = patch(Faces=edges, Vertices=P, CData=temps,
+    ...                               FaceColor='interp', return_mappable=True)
     >>> plt.colorbar(mappable, label='Temperature (°C)')
 
     3D surface with transparency:
@@ -166,8 +166,7 @@ def patch(*args, ax=None, return_mappable=False, **kwargs):
     >>> vertices = np.array([[0,0,0], [1,0,0], [1,1,0], [0,1,0]])
     >>> faces = np.array([[1, 2, 3, 4]])
     >>> colors = np.array([[1, 0, 0]])
-    >>> patch('Faces', faces, 'Vertices', vertices,
-    ...       'FaceVertexCData', colors, 'FaceAlpha', 0.5)
+    >>> patch(Faces=faces, Vertices=vertices, CData=colors, FaceAlpha=0.5)
 
     See Also
     --------
@@ -215,7 +214,12 @@ def patch(*args, ax=None, return_mappable=False, **kwargs):
 
 def _parse_arguments(args, kwargs):
     """
-    Parse MATLAB-style name-value pairs or direct coordinate input.
+    Parse MATLAB-style name-value pairs, keyword arguments, or direct coordinate input.
+
+    Supports three calling styles:
+    1. MATLAB-style: patch('Faces', F, 'Vertices', V, 'CData', C)
+    2. Pythonic: patch(Faces=F, Vertices=V, CData=C)
+    3. Mixed: patch('Faces', F, Vertices=V, CData=C)
 
     Returns
     -------
@@ -254,6 +258,7 @@ def _parse_arguments(args, kwargs):
                     'faces': 'Faces',
                     'vertices': 'Vertices',
                     'facevertexcdata': 'FaceVertexCData',
+                    'cdata': 'FaceVertexCData',  # Pythonic alias
                     'facecolor': 'FaceColor',
                     'facealpha': 'FaceAlpha',
                     'edgecolor': 'EdgeColor',
@@ -273,13 +278,34 @@ def _parse_arguments(args, kwargs):
                     raise ValueError(f"No value provided for '{key}'")
             else:
                 i += 1
-    else:
+    elif args:
         # Direct coordinate input: patch(x, y, c) or patch(x, y, z, c)
         # TODO: Implement this for completeness
         raise NotImplementedError("Direct coordinate input not yet implemented. Use Faces/Vertices notation.")
 
-    # Override with any kwargs
-    params.update(kwargs)
+    # Process kwargs with key normalization
+    # This allows both MATLAB-style (FaceVertexCData) and Pythonic (CData) naming
+    for key, value in kwargs.items():
+        key_lower = key.lower()
+
+        # Map to canonical names
+        key_map = {
+            'faces': 'Faces',
+            'vertices': 'Vertices',
+            'facevertexcdata': 'FaceVertexCData',
+            'cdata': 'FaceVertexCData',  # Pythonic alias
+            'facecolor': 'FaceColor',
+            'facealpha': 'FaceAlpha',
+            'edgecolor': 'EdgeColor',
+            'linewidth': 'LineWidth',
+            'linestyle': 'LineStyle',
+            'edgealpha': 'EdgeAlpha',
+            'shading': 'Shading',
+            'interpolation_method': 'interpolation_method',
+        }
+
+        canonical_key = key_map.get(key_lower, key)
+        params[canonical_key] = value
 
     return params
 

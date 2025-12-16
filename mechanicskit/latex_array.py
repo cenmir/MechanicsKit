@@ -209,8 +209,19 @@ def display_labeled_latex(label, array, precision=2, arrayStretch=1.5, show_shap
 
     # Handle 1D array (vector - displayed as column vector)
     elif array.ndim == 1:
+        n = array.shape[0]
+        threshold = 8
+        show_n = 6
+        truncate = n > threshold
+
         latex_str = "\\begin{bmatrix}"
-        values = [format_val(v, precision) for v in array]
+        if truncate:
+            # Show first show_n elements, ..., then last element
+            values = [format_val(array[i], precision) for i in range(show_n)]
+            values.append("\\vdots")
+            values.append(format_val(array[-1], precision))
+        else:
+            values = [format_val(v, precision) for v in array]
         latex_str += " \\\\ ".join(values)
         latex_str += "\\end{bmatrix}"
         # Add shape subscript if requested
@@ -223,11 +234,39 @@ def display_labeled_latex(label, array, precision=2, arrayStretch=1.5, show_shap
     # Handle 2D array (matrix)
     elif array.ndim == 2:
         n_rows, n_cols = array.shape
+        threshold = 8
+        show_n = 6
+        truncate_rows = n_rows > threshold
+        truncate_cols = n_cols > threshold
+
         latex_str = "\\begin{bmatrix}"
         rows = []
-        for i in range(n_rows):
-            row_vals = [format_val(array[i, j], precision) for j in range(n_cols)]
+
+        # Determine which row indices to show
+        row_indices = list(range(n_rows))
+        if truncate_rows:
+            row_indices = list(range(show_n)) + [-1] + [n_rows - 1]
+
+        for i in row_indices:
+            row_vals = []
+            # Determine which column indices to show
+            col_indices = list(range(n_cols))
+            if truncate_cols:
+                col_indices = list(range(show_n)) + [-1] + [n_cols - 1]
+
+            if i == -1:
+                # This is the "..." row
+                for j in col_indices:
+                    row_vals.append("\\vdots" if j != -1 else "\\ddots")
+            else:
+                for j in col_indices:
+                    if j == -1:
+                        row_vals.append("\\cdots")
+                    else:
+                        row_vals.append(format_val(array[i, j], precision))
+
             rows.append(" & ".join(row_vals))
+
         latex_str += " \\\\ ".join(rows)
         latex_str += "\\end{bmatrix}"
         # Add shape subscript if requested

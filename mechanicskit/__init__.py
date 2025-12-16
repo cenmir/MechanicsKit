@@ -28,9 +28,10 @@ from .one_array import OneArray
 from .patch import patch
 from .fplot import fplot
 from .colormap_utils import colorbar, cmap
+from .help import quick_ref
 
 # Version information
-__version__ = '0.1.1'
+__version__ = '0.2.0'
 
 def version():
     """
@@ -59,4 +60,5 @@ __all__ = [
     'fplot',
     'colorbar', 'cmap',
     'version',
+    'quick_ref',
 ]
