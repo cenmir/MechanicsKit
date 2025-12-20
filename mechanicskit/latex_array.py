@@ -28,6 +28,14 @@ class LatexArray:
 
         # --- Helper to format numbers ---
         def get_val(v):
+            # Check if it's a SymPy expression first
+            try:
+                if hasattr(v, '__module__') and v.__module__ and 'sympy' in v.__module__:
+                    from sympy import latex as sympy_latex
+                    return sympy_latex(v)
+            except (AttributeError, ImportError):
+                pass
+
             if isinstance(v, (np.complexfloating, complex)):
                 # Format as 'a+bj' or 'a-bj' with sign handling for imag part
                 return f"{v.real:.2f}{v.imag:+.2f}j"
@@ -195,6 +203,14 @@ def display_labeled_latex(label, array, precision=2, arrayStretch=1.5, show_shap
 
     # Helper to format numbers with specified precision
     def format_val(v, prec):
+        # Check if it's a SymPy expression first
+        try:
+            if hasattr(v, '__module__') and v.__module__ and 'sympy' in v.__module__:
+                from sympy import latex as sympy_latex
+                return sympy_latex(v)
+        except (AttributeError, ImportError):
+            pass
+
         if isinstance(v, (np.complexfloating, complex)):
             # Format complex numbers
             return f"{v.real:.{prec}f}{v.imag:+.{prec}f}j"

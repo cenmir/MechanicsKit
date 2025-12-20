@@ -197,5 +197,74 @@ class TestComplexNumbers:
         assert "j" in latex_str
 
 
+class TestSymPyExpressions:
+    """Test handling of SymPy symbolic expressions in arrays."""
+
+    def test_sympy_scalar_with_sqrt(self):
+        """Test SymPy scalar with sqrt renders properly."""
+        pytest.importorskip("sympy")
+        import sympy as sp
+
+        expr = sp.sqrt(3) / 6
+        arr = np.array(expr)
+        latex_obj = LatexArray(arr)
+        latex_str = latex_obj._repr_latex_()
+
+        # Should contain LaTeX sqrt, not plain text "sqrt"
+        assert "\\sqrt{3}" in latex_str or "sqrt{3}" in latex_str
+        assert latex_str.count("sqrt") <= 1  # Should be LaTeX command, not text
+
+    def test_sympy_vector(self):
+        """Test vector of SymPy expressions."""
+        pytest.importorskip("sympy")
+        import sympy as sp
+
+        x = sp.Symbol('x')
+        arr = np.array([sp.Rational(1, 2), sp.sqrt(2), x**2])
+        latex_obj = LatexArray(arr)
+        latex_str = latex_obj._repr_latex_()
+
+        # Check for LaTeX fractions and sqrt
+        assert "\\frac{1}{2}" in latex_str or "frac{1}{2}" in latex_str
+        assert "\\sqrt{2}" in latex_str or "sqrt{2}" in latex_str
+        assert "x^{2}" in latex_str or "x^2" in latex_str
+
+    def test_sympy_matrix_from_solve(self):
+        """Test matrix of SymPy tuples from solve (user's use case)."""
+        pytest.importorskip("sympy")
+        import sympy as sp
+
+        # Simulate user's Gaussian quadrature solve result
+        w1, w2, x1, x2, x = sp.symbols('w1 w2 x1 x2 x')
+        eqs = [w1*x1**i + w2*x2**i - sp.integrate(x**i, (x, 0, 1)) for i in range(4)]
+        sol = sp.solve(eqs, [w1, w2, x1, x2])
+
+        # Convert to array and render
+        sol_array = np.array(sol)
+        latex_obj = LatexArray(sol_array)
+        latex_str = latex_obj._repr_latex_()
+
+        # Should contain proper LaTeX rendering, not "sqrt(3)"
+        assert "\\sqrt{3}" in latex_str or "sqrt{3}" in latex_str
+        assert "\\frac" in latex_str or "frac" in latex_str
+        # Should NOT contain plain text sqrt
+        assert "sqrt(3)" not in latex_str
+
+    def test_sympy_mixed_types(self):
+        """Test array mixing SymPy expressions and numbers."""
+        pytest.importorskip("sympy")
+        import sympy as sp
+
+        arr = np.array([[sp.Rational(1, 2), sp.sqrt(3)/6],
+                        [0.5, 1.732]])
+        latex_obj = LatexArray(arr)
+        latex_str = latex_obj._repr_latex_()
+
+        # SymPy expressions should use LaTeX
+        assert "\\frac" in latex_str or "frac" in latex_str
+        # Regular floats should be formatted
+        assert "0.50" in latex_str or "1.73" in latex_str
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
