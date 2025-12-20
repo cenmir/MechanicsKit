@@ -13,6 +13,7 @@ This package provides:
 - Field management for nodal, DOF, and element data
 - MATLAB-style patch function for mesh visualization (patch)
 - MATLAB-style fplot for symbolic function plotting (fplot)
+- Flexible Gaussian quadrature integration (gaussint)
 
 Philosophy:
 -----------
@@ -27,6 +28,7 @@ from .mesh import Mesh, ELEMENT_TYPES
 from .one_array import OneArray
 from .patch import patch
 from .fplot import fplot
+from .gaussint import gaussint
 from .colormap_utils import colorbar, cmap
 from .help import quick_ref
 
@@ -58,6 +60,7 @@ __all__ = [
     'OneArray',
     'patch',
     'fplot',
+    'gaussint',
     'colorbar', 'cmap',
     'version',
     'quick_ref',
