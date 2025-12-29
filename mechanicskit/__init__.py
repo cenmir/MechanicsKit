@@ -14,6 +14,7 @@ This package provides:
 - MATLAB-style patch function for mesh visualization (patch)
 - MATLAB-style fplot for symbolic function plotting (fplot)
 - Flexible Gaussian quadrature integration (gaussint)
+- Animation utilities for responsive, auto-playing animations (to_responsive_html)
 
 Philosophy:
 -----------
@@ -31,6 +32,7 @@ from .fplot import fplot
 from .gaussint import gaussint
 from .colormap_utils import colorbar, cmap
 from .help import quick_ref
+from .animation_utils import to_responsive_html
 
 # Version information
 __version__ = '0.2.0'
@@ -64,4 +66,5 @@ __all__ = [
     'colorbar', 'cmap',
     'version',
     'quick_ref',
+    'to_responsive_html',
 ]
