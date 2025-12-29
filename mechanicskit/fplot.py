@@ -15,7 +15,8 @@ except ImportError:
     HAS_SYMPY = False
 
 
-def fplot(*args, range=(-5, 5), ax=None, npoints=100, **kwargs):
+def fplot(*args, range=(-5, 5), ax=None, npoints=100,
+         title=None, xlabel=None, ylabel=None, **kwargs):
     """
     Plot symbolic function(s) over a range, similar to MATLAB's fplot.
 
@@ -31,14 +32,17 @@ def fplot(*args, range=(-5, 5), ax=None, npoints=100, **kwargs):
         For 2D plots:
             - fplot(f): Plot f(x) with auto-detected parameter, default range
             - fplot(f, param): Plot f with explicit parameter
+            - fplot(f, (param, min, max)): SymPy-style with parameter and range
 
         For parametric plots:
             - fplot(xt, yt): Plot parametric curve with auto-detected parameter
             - fplot(xt, yt, param): Plot parametric curve with explicit parameter
+            - fplot(xt, yt, (param, min, max)): SymPy-style with parameter and range
 
     range : tuple of (float, float), optional
         Range [start, end] for the independent variable.
         Default: (-5, 5)
+        Note: Overridden if (param, min, max) tuple is provided in args.
 
     ax : matplotlib.axes.Axes, optional
         Axes to plot on. If None, uses plt.gca() to get current axes.
@@ -46,6 +50,15 @@ def fplot(*args, range=(-5, 5), ax=None, npoints=100, **kwargs):
     npoints : int, optional
         Number of points to evaluate the function at.
         Default: 100
+
+    title : str, optional
+        Title for the plot. Sets ax.set_title(title).
+
+    xlabel : str, optional
+        Label for x-axis. Sets ax.set_xlabel(xlabel).
+
+    ylabel : str, optional
+        Label for y-axis. Sets ax.set_ylabel(ylabel).
 
     **kwargs
         Additional keyword arguments passed to ax.plot().
@@ -75,9 +88,24 @@ def fplot(*args, range=(-5, 5), ax=None, npoints=100, **kwargs):
     >>> fplot(sp.sin(x))  # Plots sin(x) over [-5, 5]
     >>> plt.show()
 
-    Custom range:
+    Custom range with keyword:
 
     >>> fplot(sp.sin(x), range=(-10, 10))
+    >>> plt.show()
+
+    SymPy-style syntax with tuple:
+
+    >>> t = sp.Symbol('t')
+    >>> T = 20 + 80*sp.exp(-0.05*t)
+    >>> fplot(T, (t, 0, 60))  # Plots T(t) from 0 to 60
+    >>> plt.show()
+
+    With title and labels:
+
+    >>> fplot(T, (t, 0, 60),
+    ...       title="Cooling of a hot object",
+    ...       xlabel="Time (minutes)",
+    ...       ylabel="Temperature (°C)")
     >>> plt.show()
 
     Multiple plots:
@@ -88,19 +116,10 @@ def fplot(*args, range=(-5, 5), ax=None, npoints=100, **kwargs):
     >>> ax.legend()
     >>> plt.show()
 
-    Parametric curves:
+    Parametric curves with SymPy syntax:
 
     >>> t = sp.Symbol('t')
-    >>> fplot(sp.cos(t), sp.sin(t), range=(0, 2*sp.pi))
-    >>> plt.axis('equal')
-    >>> plt.show()
-
-    Parametric curve with explicit parameter:
-
-    >>> s = sp.Symbol('s')
-    >>> xt = s * sp.cos(s)
-    >>> yt = s * sp.sin(s)
-    >>> fplot(xt, yt, s, range=(0, 4*sp.pi))
+    >>> fplot(sp.cos(t), sp.sin(t), (t, 0, 2*sp.pi))
     >>> plt.axis('equal')
     >>> plt.show()
 
@@ -114,6 +133,7 @@ def fplot(*args, range=(-5, 5), ax=None, npoints=100, **kwargs):
     See Also
     --------
     matplotlib.pyplot.plot : Standard matplotlib plotting
+    sympy.plotting.plot : SymPy's plotting function
 
     Notes
     -----
@@ -125,6 +145,10 @@ def fplot(*args, range=(-5, 5), ax=None, npoints=100, **kwargs):
 
     If your expression has multiple free symbols, you must specify which
     parameter to use explicitly.
+
+    The SymPy-style tuple syntax (param, min, max) is supported for
+    compatibility with sympy.plot(), making it easy to switch between
+    the two plotting functions.
 
     References
     ----------
@@ -144,23 +168,82 @@ def fplot(*args, range=(-5, 5), ax=None, npoints=100, **kwargs):
     if len(args) == 0:
         raise ValueError("fplot requires at least one symbolic expression")
 
+    # Parse arguments to extract range specification if present
+    # This handles SymPy-style syntax: (param, min, max)
+    processed_args, plot_range = _parse_args_and_range(args, range)
+
     # Determine if this is a parametric plot
     # Logic: If we have 2 or 3 args, check if they could be (xt, yt, [param])
     is_parametric = False
-    if len(args) >= 2:
+    if len(processed_args) >= 2:
         # Check if second arg is NOT a Symbol (if it's an expression, likely parametric)
-        if not isinstance(args[1], sp.Symbol):
+        if not isinstance(processed_args[1], sp.Symbol):
             is_parametric = True
         # Or if we have 3 args and third is a Symbol
-        elif len(args) == 3 and isinstance(args[2], sp.Symbol):
+        elif len(processed_args) == 3 and isinstance(processed_args[2], sp.Symbol):
             is_parametric = True
 
+    # Plot
     if is_parametric:
         # Parametric plot: fplot(xt, yt, [param])
-        return _fplot_parametric(args, range, ax, npoints, **kwargs)
+        line = _fplot_parametric(processed_args, plot_range, ax, npoints, **kwargs)
     else:
         # Regular 2D plot: fplot(f, [param])
-        return _fplot_2d(args, range, ax, npoints, **kwargs)
+        line = _fplot_2d(processed_args, plot_range, ax, npoints, **kwargs)
+
+    # Set title and labels if provided
+    if title is not None:
+        ax.set_title(title)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
+
+    return line
+
+
+def _parse_args_and_range(args, default_range):
+    """
+    Parse arguments to extract range specification from SymPy-style tuples.
+
+    Handles syntax like (param, min, max) and extracts the range from it.
+
+    Parameters
+    ----------
+    args : tuple
+        Original arguments passed to fplot
+    default_range : tuple
+        Default (min, max) range if none specified
+
+    Returns
+    -------
+    processed_args : tuple
+        Arguments with range tuple replaced by just the parameter
+    plot_range : tuple
+        The (min, max) range to use
+    """
+    processed_args = []
+    plot_range = default_range
+
+    for arg in args:
+        # Check if this is a range specification tuple
+        if isinstance(arg, tuple) and len(arg) == 3:
+            # Check if first element is a Symbol and next two are numbers
+            if isinstance(arg[0], sp.Symbol):
+                try:
+                    # Try to convert to float to verify they're numbers
+                    min_val = float(arg[1])
+                    max_val = float(arg[2])
+                    # This is a range specification
+                    processed_args.append(arg[0])  # Add just the Symbol
+                    plot_range = (min_val, max_val)  # Update range
+                    continue
+                except (TypeError, ValueError):
+                    pass
+                # Not a range specification, keep as is
+        processed_args.append(arg)
+
+    return tuple(processed_args), plot_range
 
 
 def _fplot_2d(args, plot_range, ax, npoints, **kwargs):
