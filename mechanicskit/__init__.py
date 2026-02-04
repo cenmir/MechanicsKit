@@ -24,7 +24,10 @@ MechanicsKit eliminates this translation burden through smart interface design.
 
 Think in mathematics. Code in Python. MechanicsKit handles the translation.
 """
-from .latex_array import LatexArray, la, display_labeled_latex
+from .latex_array import (
+    LatexArray, la, display_labeled_latex,
+    LatexExpression, latex_expression, ltx, labeled
+)
 from .mesh import Mesh, ELEMENT_TYPES
 from .one_array import OneArray
 from .patch import patch
@@ -35,7 +38,7 @@ from .help import quick_ref
 from .animation_utils import to_responsive_html
 
 # Version information
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 
 def version():
     """
@@ -58,6 +61,7 @@ def version():
 
 __all__ = [
     'LatexArray', 'la', 'display_labeled_latex',
+    'LatexExpression', 'latex_expression', 'ltx', 'labeled',
     'Mesh', 'ELEMENT_TYPES',
     'OneArray',
     'patch',

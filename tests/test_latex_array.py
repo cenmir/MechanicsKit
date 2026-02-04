@@ -8,7 +8,10 @@ correct LaTeX generation for various input types.
 
 import pytest
 import numpy as np
-from mechanicskit.latex_array import display_labeled_latex, LatexArray, la
+from mechanicskit.latex_array import (
+    display_labeled_latex, LatexArray, la,
+    LatexExpression, latex_expression, ltx, labeled
+)
 
 
 class TestLatexArray:
@@ -264,6 +267,124 @@ class TestSymPyExpressions:
         assert "\\frac" in latex_str or "frac" in latex_str
         # Regular floats should be formatted
         assert "0.50" in latex_str or "1.73" in latex_str
+
+
+class TestLatexExpression:
+    """Test the LatexExpression class and ltx function."""
+
+    def test_single_array(self):
+        """Test with just one array."""
+        A = np.array([[1, 2], [3, 4]])
+        expr = ltx("A=", A)
+        latex_str = expr._repr_latex_()
+        assert "A=" in latex_str
+        assert "begin{bmatrix}" in latex_str
+        assert "$$" in latex_str
+
+    def test_multiple_arrays(self):
+        """Test with multiple arrays."""
+        A = np.array([[1, 2], [3, 4]])
+        B = np.array([[5, 6], [7, 8]])
+        expr = ltx("A=", A, ",\\ B=", B)
+        latex_str = expr._repr_latex_()
+        assert "A=" in latex_str
+        assert "B=" in latex_str
+        assert latex_str.count("begin{bmatrix}") == 2
+
+    def test_vector_and_matrix(self):
+        """Test mixing vectors and matrices."""
+        A = np.array([[1, 2], [3, 4]])
+        x = np.array([1, 2])
+        expr = ltx("A=", A, ",\\ \\mathbf{x}=", x)
+        latex_str = expr._repr_latex_()
+        assert latex_str.count("begin{bmatrix}") == 2
+
+    def test_precision_parameter(self):
+        """Test custom precision."""
+        A = np.array([[1.123456, 2.987654]])
+        expr = ltx("A=", A, precision=4)
+        latex_str = expr._repr_latex_()
+        assert "1.1235" in latex_str
+        assert "2.9877" in latex_str
+
+    def test_default_precision(self):
+        """Test default precision is 2."""
+        A = np.array([[1.126, 2.984]])
+        expr = ltx("A=", A)
+        latex_str = expr._repr_latex_()
+        assert "1.13" in latex_str
+        assert "2.98" in latex_str
+
+    def test_str_method(self):
+        """Test __str__ returns raw LaTeX without $$."""
+        A = np.array([1, 2])
+        expr = ltx("A=", A)
+        str_result = str(expr)
+        assert "$$" not in str_result
+        assert "A=" in str_result
+        assert "begin{bmatrix}" in str_result
+
+    def test_scalar(self):
+        """Test with scalar value."""
+        expr = ltx("x=", np.array(5))
+        latex_str = expr._repr_latex_()
+        assert "x=" in latex_str
+        assert "5" in latex_str
+
+    def test_sympy_expression(self):
+        """Test with SymPy matrix."""
+        pytest.importorskip("sympy")
+        from sympy import symbols, Matrix, sqrt
+
+        a = symbols('a')
+        M = Matrix([[a, sqrt(2)], [1, a**2]])
+        expr = ltx("M=", M)
+        latex_str = expr._repr_latex_()
+        assert "M=" in latex_str
+        # SymPy should render properly
+        assert "\\sqrt{2}" in latex_str or "sqrt{2}" in latex_str
+
+    def test_long_vector_truncation(self):
+        """Test that long vectors get truncated."""
+        v = np.arange(20)
+        expr = ltx("v=", v)
+        latex_str = expr._repr_latex_()
+        assert "\\vdots" in latex_str
+
+    def test_large_matrix_truncation(self):
+        """Test that large matrices get truncated."""
+        A = np.arange(100).reshape(10, 10)
+        expr = ltx("A=", A)
+        latex_str = expr._repr_latex_()
+        assert "\\cdots" in latex_str
+        assert "\\vdots" in latex_str
+        assert "\\ddots" in latex_str
+
+    def test_latex_expression_full_name(self):
+        """Test that latex_expression is the same as ltx."""
+        A = np.array([1, 2, 3])
+        expr1 = ltx("A=", A)
+        expr2 = latex_expression("A=", A)
+        assert expr1._repr_latex_() == expr2._repr_latex_()
+
+    def test_complex_numbers(self):
+        """Test complex number formatting."""
+        A = np.array([1 + 2j, 3 - 4j])
+        expr = ltx("z=", A)
+        latex_str = expr._repr_latex_()
+        assert "j" in latex_str
+
+
+class TestAliases:
+    """Test that aliases work correctly."""
+
+    def test_labeled_alias(self):
+        """Test that labeled is an alias for display_labeled_latex."""
+        assert labeled is display_labeled_latex
+
+    def test_ltx_alias(self):
+        """Test that ltx is an alias for latex_expression."""
+        assert ltx is latex_expression
 
 
 if __name__ == "__main__":

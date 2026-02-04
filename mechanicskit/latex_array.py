@@ -300,3 +300,206 @@ def display_labeled_latex(label, array, precision=2, arrayStretch=1.5, show_shap
 
     # Display using IPython
     display(Latex(full_latex))
+
+
+# Alias for display_labeled_latex
+labeled = display_labeled_latex
+
+
+class LatexExpression:
+    """
+    Builds a LaTeX expression from variadic arguments of strings and arrays.
+
+    Enables the pedagogical pattern of defining multiple matrices/vectors in one display:
+    "Let A=..., B=..., x=..."
+
+    Usage:
+        from mechanicskit import latex_expression, ltx
+
+        A = np.array([[1, 2], [3, 4]])
+        B = np.array([[5, 6], [7, 8]])
+        x = np.array([1, 2])
+
+        # Display multiple arrays in one expression
+        ltx("A=", A, ",\\ B=", B, ",\\ \\mathbf{x}=", x)
+
+        # With custom precision
+        latex_expression("A=", A, ",\\ B=", B, precision=4)
+    """
+
+    def __init__(self, *args, precision=2):
+        """
+        Parameters
+        ----------
+        *args : str or array_like
+            Alternating strings (LaTeX fragments) and arrays/values to format.
+            Strings are passed through as-is.
+            Arrays are converted to bmatrix format.
+        precision : int, optional
+            Number of decimal places for floats (default: 2)
+        """
+        self.args = args
+        self.precision = precision
+
+    def _format_val(self, v):
+        """Format a single value for LaTeX."""
+        # Check if it's a SymPy expression first
+        try:
+            if hasattr(v, '__module__') and v.__module__ and 'sympy' in v.__module__:
+                from sympy import latex as sympy_latex
+                return sympy_latex(v)
+        except (AttributeError, ImportError):
+            pass
+
+        if isinstance(v, (np.complexfloating, complex)):
+            return f"{v.real:.{self.precision}f}{v.imag:+.{self.precision}f}j"
+        elif isinstance(v, (float, np.floating)):
+            return f"{v:.{self.precision}f}"
+        else:
+            return str(v)
+
+    def _array_to_latex(self, array):
+        """Convert a NumPy array to LaTeX bmatrix format."""
+        # Check if input is a OneArray and extract underlying data
+        if hasattr(array, 'data') and hasattr(array, '__class__') and array.__class__.__name__ == 'OneArray':
+            array = array.data
+
+        # Handle SymPy matrices directly
+        try:
+            if hasattr(array, '__module__') and 'sympy' in array.__module__:
+                from sympy import latex as sympy_latex
+                return sympy_latex(array)
+        except (AttributeError, ImportError):
+            pass
+
+        array = np.asarray(array)
+
+        # Scalar
+        if array.ndim == 0:
+            return self._format_val(array.item())
+
+        # 1D array (vector) - display as column vector
+        if array.ndim == 1:
+            n = array.shape[0]
+            threshold = 8
+            show_n = 6
+            truncate = n > threshold
+
+            latex_str = "\\begin{bmatrix}"
+            if truncate:
+                values = [self._format_val(array[i]) for i in range(show_n)]
+                values.append("\\vdots")
+                values.append(self._format_val(array[-1]))
+            else:
+                values = [self._format_val(v) for v in array]
+            latex_str += " \\\\ ".join(values)
+            latex_str += "\\end{bmatrix}"
+            return latex_str
+
+        # 2D array (matrix)
+        if array.ndim == 2:
+            n_rows, n_cols = array.shape
+            threshold = 8
+            show_n = 6
+            truncate_rows = n_rows > threshold
+            truncate_cols = n_cols > threshold
+
+            latex_str = "\\begin{bmatrix}"
+            rows = []
+
+            row_indices = list(range(n_rows))
+            if truncate_rows:
+                row_indices = list(range(show_n)) + [-1] + [n_rows - 1]
+
+            for i in row_indices:
+                row_vals = []
+                col_indices = list(range(n_cols))
+                if truncate_cols:
+                    col_indices = list(range(show_n)) + [-1] + [n_cols - 1]
+
+                if i == -1:
+                    for j in col_indices:
+                        row_vals.append("\\vdots" if j != -1 else "\\ddots")
+                else:
+                    for j in col_indices:
+                        if j == -1:
+                            row_vals.append("\\cdots")
+                        else:
+                            row_vals.append(self._format_val(array[i, j]))
+
+                rows.append(" & ".join(row_vals))
+
+            latex_str += " \\\\ ".join(rows)
+            latex_str += "\\end{bmatrix}"
+            return latex_str
+
+        # Higher dimensions - fallback
+        return f"\\text{{{repr(array)}}}"
+
+    def _repr_latex_(self):
+        """
+        Return the LaTeX string for notebook display.
+        Called automatically by Jupyter/Marimo.
+        """
+        parts = []
+        for arg in self.args:
+            if isinstance(arg, str):
+                parts.append(arg)
+            else:
+                parts.append(self._array_to_latex(arg))
+
+        latex_str = "".join(parts)
+        return f"$$ {latex_str} $$"
+
+    def __str__(self):
+        """Return the raw LaTeX string (without $$ delimiters)."""
+        parts = []
+        for arg in self.args:
+            if isinstance(arg, str):
+                parts.append(arg)
+            else:
+                parts.append(self._array_to_latex(arg))
+        return "".join(parts)
+
+
+def latex_expression(*args, precision=2):
+    """
+    Create a LaTeX expression from variadic arguments of strings and arrays.
+
+    This function enables the pedagogical pattern of defining multiple
+    matrices/vectors in a single display, such as "Let A=..., B=..., x=...".
+
+    Parameters
+    ----------
+    *args : str or array_like
+        Alternating strings (LaTeX fragments) and arrays/values to format.
+        Strings are passed through as-is.
+        Arrays are converted to bmatrix format.
+    precision : int, optional
+        Number of decimal places for floats (default: 2)
+
+    Returns
+    -------
+    LatexExpression
+        An object that renders as LaTeX in Jupyter/Marimo notebooks.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from mechanicskit import ltx
+    >>>
+    >>> A = np.array([[1, 2], [3, 4]])
+    >>> B = np.array([[5, 6], [7, 8]])
+    >>> x = np.array([1, 2])
+    >>>
+    >>> # Display multiple arrays in one expression
+    >>> ltx("A=", A, ",\\ B=", B, ",\\ \\mathbf{x}=", x)
+
+    >>> # With custom precision
+    >>> ltx("A=", A, ",\\ B=", B, precision=4)
+    """
+    return LatexExpression(*args, precision=precision)
+
+
+# Short alias
+ltx = latex_expression
