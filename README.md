@@ -73,12 +73,12 @@ While larger matrices are automatically truncated with ellipsis notation:
 \end{bmatrix}
 ```
 
-#### The display_labeled_latex() function
+#### Labeled Equations with `labeled()`
 
-For Jupyter environments, the `display_labeled_latex` function offers a way to present expressions with formatted labels, which is useful for creating clear, readable examples in educational notebooks.
+For Jupyter/Marimo environments, the `labeled` function (alias for `display_labeled_latex`) offers a way to present expressions with formatted labels, which is useful for creating clear, readable examples in educational notebooks.
 
 ```python
-from mechanicskit import display_labeled_latex
+from mechanicskit import labeled
 from sympy import symbols, cos, sin, Matrix
 
 theta = symbols('theta')
@@ -88,7 +88,7 @@ R = Matrix([
 ])
 
 # Renders SymPy matrices with proper symbolic notation
-display_labeled_latex(r"\mathbf{R}(\theta) = ", R)
+labeled(r"\mathbf{R}(\theta) = ", R)
 ```
 
 ```math
@@ -96,6 +96,32 @@ display_labeled_latex(r"\mathbf{R}(\theta) = ", R)
 \cos{\left(\theta \right)} & - \sin{\left(\theta \right)} \\
 \sin{\left(\theta \right)} & \cos{\left(\theta \right)}
 \end{bmatrix}
+```
+
+#### Composing Multiple Arrays with `ltx()`
+
+The `ltx` function (alias for `latex_expression`) enables the pedagogical pattern of defining multiple matrices and vectors in a single display—perfect for statements like "Let A=..., B=..., x=...".
+
+```python
+import numpy as np
+from mechanicskit import ltx
+
+A = np.array([[1, 2], [3, 4]])
+B = np.array([[5, 6], [7, 8]])
+x = np.array([1, 2, 3])
+
+# Display multiple arrays in one expression
+ltx("A=", A, ",\\ B=", B, ",\\ \\mathbf{x}=", x)
+```
+
+```math
+A=\begin{bmatrix}1 & 2 \\ 3 & 4\end{bmatrix},\ B=\begin{bmatrix}5 & 6 \\ 7 & 8\end{bmatrix},\ \mathbf{x}=\begin{bmatrix}1 \\ 2 \\ 3\end{bmatrix}
+```
+
+You can also control precision:
+
+```python
+ltx("A=", A, ",\\ B=", B, precision=4)
 ```
 
 
@@ -196,7 +222,11 @@ plt.show()
 
 ## Update History
 
-**December 2025**
+**February 2026 (v0.3.0)**
+- Added `ltx()` function for composing LaTeX expressions with multiple arrays.
+- Added `labeled()` as a short alias for `display_labeled_latex()`.
+
+**December 2025 (v0.2.0)**
 - Added `show_shape` parameter to display array dimensions as a subscript.
 - Added `display_labeled_latex()` function for Jupyter notebooks with labeled equations.
 - Implemented SymPy integration for automatic detection and proper symbolic formatting.
