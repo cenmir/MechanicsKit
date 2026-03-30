@@ -17,13 +17,21 @@ class LatexArray:
     """
 
     def __init__(self, array):
-        self.array = np.asarray(array) # Store the array
+        self._is_dict = isinstance(array, dict)
+        if self._is_dict:
+            self._dict = array
+        else:
+            self.array = np.asarray(array) # Store the array
 
     def _repr_latex_(self):
         """
         This is the method marimo looks for, based on the docs.
         It must return a raw LaTeX string surrounded by $$.
         """
+        # Handle dicts (e.g. SymPy solver output)
+        if self._is_dict:
+            return self._dict_to_latex()
+
         array = self.array
 
         # --- Helper to format numbers ---
@@ -104,6 +112,28 @@ class LatexArray:
         else:
             # Fallback to the default (ugly) text repr
             return f"$$ \\text{{{repr(array)}}} $$"
+
+
+    def _repr_mimebundle_(self, **kwargs):
+        """Fallback for Jupyter environments that prefer mimebundle over _repr_latex_."""
+        return {"text/latex": self._repr_latex_()}
+
+    def _dict_to_latex(self):
+        """Render a dict as an aligned equation system."""
+        try:
+            from sympy import latex as sympy_latex
+            has_sympy = True
+        except ImportError:
+            has_sympy = False
+
+        def to_latex(obj):
+            if has_sympy and hasattr(obj, '__module__') and 'sympy' in str(getattr(obj, '__module__', '')):
+                return sympy_latex(obj)
+            return str(obj)
+
+        lines = [f"{to_latex(k)} &= {to_latex(v)}" for k, v in self._dict.items()]
+        latex_str = "\\begin{aligned}\n" + " \\\\\n".join(lines) + "\n\\end{aligned}"
+        return f"$$ {latex_str} $$"
 
 
 class LatexRenderer:
