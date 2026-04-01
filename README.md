@@ -200,6 +200,42 @@ plt.show()
 ![Deformed mesh visualization](assets/images/patch_deformed_mesh.png)
 
 
+### Arrow Plotting
+
+The `arrow()` function draws 2D arrows in data coordinates. Unlike matplotlib's `quiver`, there is no auto-scaling -- what you specify is what you get. It accepts SymPy Matrices, numpy arrays, lists, and tuples directly.
+
+```python
+import sympy as sp
+import mechanicskit as mk
+
+FF = 500 * sp.Matrix([sp.cos(sp.rad(30)), sp.sin(sp.rad(30)), 0])
+
+# Direction mode: start + direction vector
+mk.arrow([0, 0], FF, scale=0.001, color='red', label=r'$\boldsymbol{F}$')
+
+# Point-to-point mode
+mk.arrow(start=[0, 0], end=[1, 1], color='blue')
+
+# Partial arrow (half-way)
+mk.arrow(start=[0, 0], end=[2, 2], scale=0.5, color='gray')
+
+# Multiple arrows with X, Y, U, V arrays
+import numpy as np
+X = np.array([0, 1, 2])
+Y = np.array([0, 0, 0])
+U = np.array([0.5, 0.7, 0.3])
+V = np.array([1.0, 0.5, -0.5])
+mk.arrow(X, Y, U, V, color='purple')
+
+# Lists of vectors
+A, B, C = [0, 0], [1, 0], [2, 0]
+mk.arrow([A, B, C], [FF_1, FF_2, FF_3], scale=0.001, color=['red', 'blue', 'green'])
+```
+
+The `scale` parameter works intuitively: `scale=2` doubles the arrow length, `scale=0.5` halves it.
+
+### Function Plotting
+
 The library also includes a `fplot()` function for plotting mathematical functions with SymPy expressions, providing a simple interface for visualizing functions in 1D.
 
 ```python
@@ -221,6 +257,10 @@ plt.show()
 
 
 ## Update History
+
+**April 2026 (v0.4.0)**
+- Added `arrow()` function for drawing 2D arrows in data coordinates. Accepts SymPy Matrices directly. Supports direction mode, point-to-point mode, lists of vectors, and X/Y/U/V arrays.
+- Added dict support to `la` pipe for displaying SymPy solver output as aligned equations.
 
 **February 2026 (v0.3.0)**
 - Added `ltx()` function for composing LaTeX expressions with multiple arrays.

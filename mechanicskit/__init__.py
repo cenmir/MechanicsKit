@@ -32,13 +32,14 @@ from .mesh import Mesh, ELEMENT_TYPES
 from .one_array import OneArray
 from .patch import patch
 from .fplot import fplot
+from .arrow import arrow
 from .gaussint import gaussint
 from .colormap_utils import colorbar, cmap
 from .help import quick_ref
 from .animation_utils import to_responsive_html
 
 # Version information
-__version__ = '0.3.0'
+__version__ = '0.4.0'
 
 def version():
     """
@@ -69,6 +70,7 @@ __all__ = [
     'gaussint',
     'colorbar', 'cmap',
     'version',
+    'arrow',
     'quick_ref',
     'to_responsive_html',
 ]
