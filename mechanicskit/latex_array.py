@@ -16,12 +16,23 @@ class LatexArray:
         np.arange(10) | la
     """
 
-    def __init__(self, array):
+    def __init__(self, array, arraystretch=2.5, alignedstretch=2.5, evalf=None):
+        self.arraystretch = arraystretch
+        self.alignedstretch = alignedstretch
+        self.evalf = evalf
         self._is_dict = isinstance(array, dict)
+        # Detect SymPy objects and pass them through directly
+        self._is_sympy = hasattr(array, '__module__') and array.__module__ and 'sympy' in array.__module__
         if self._is_dict:
             self._dict = array
+        elif self._is_sympy:
+            self._sympy_obj = array
         else:
             self.array = np.asarray(array) # Store the array
+
+    def _wrap_stretch(self, latex_str):
+        """Wrap a LaTeX matrix string with \\arraystretch."""
+        return f"$$ {{\\def\\arraystretch{{{self.arraystretch}}}{latex_str}}} $$"
 
     def _repr_latex_(self):
         """
@@ -32,6 +43,12 @@ class LatexArray:
         if self._is_dict:
             return self._dict_to_latex()
 
+        # Handle SymPy objects directly (Matrix, Eq, etc.)
+        if self._is_sympy:
+            from sympy import latex as sympy_latex
+            s = sympy_latex(self._sympy_obj).replace(r'\frac', r'\dfrac')
+            return self._wrap_stretch(s)
+
         array = self.array
 
         # --- Helper to format numbers ---
@@ -40,7 +57,7 @@ class LatexArray:
             try:
                 if hasattr(v, '__module__') and v.__module__ and 'sympy' in v.__module__:
                     from sympy import latex as sympy_latex
-                    return sympy_latex(v)
+                    return sympy_latex(v).replace(r'\frac', r'\dfrac')
             except (AttributeError, ImportError):
                 pass
 
@@ -77,7 +94,7 @@ class LatexArray:
                 row_strs.append(get_val(array[-1]))  # and last element
                 latex_str += " & ".join(row_strs) + "\n"
                 latex_str += "\\end{bmatrix}^\\mathsf T"
-            return f"$$ {latex_str} $$"
+            return self._wrap_stretch(latex_str)
 
         # --- Branch 2: 2D Arrays (Matrices) ---
         elif array.ndim == 2:
@@ -106,7 +123,7 @@ class LatexArray:
                             row_strs.append(get_val(array[i, j]))
                 latex_str += " & ".join(row_strs) + " \\\\\n"
             latex_str += "\\end{bmatrix}"
-            return f"$$ {latex_str} $$"
+            return self._wrap_stretch(latex_str)
 
         # --- Branch 3: Other ---
         else:
@@ -128,11 +145,14 @@ class LatexArray:
 
         def to_latex(obj):
             if has_sympy and hasattr(obj, '__module__') and 'sympy' in str(getattr(obj, '__module__', '')):
-                return sympy_latex(obj)
+                if self.evalf is not None and hasattr(obj, 'evalf'):
+                    obj = obj.evalf(self.evalf)
+                return sympy_latex(obj).replace(r'\frac', r'\dfrac')
             return str(obj)
 
         lines = [f"{to_latex(k)} &= {to_latex(v)}" for k, v in self._dict.items()]
-        latex_str = "\\begin{aligned}\n" + " \\\\\n".join(lines) + "\n\\end{aligned}"
+        gap = f"{(self.alignedstretch - 1) * 6:.1f}pt"
+        latex_str = "\\begin{aligned}\n" + f" \\\\[{gap}]\n".join(lines) + "\n\\end{aligned}"
         return f"$$ {latex_str} $$"
 
 
@@ -152,13 +172,37 @@ class LatexRenderer:
     # High priority to override NumPy's element-wise operations
     __array_priority__ = 1000
 
-    def __call__(self, array):
-        """Called when used as a function: la(array)"""
-        return LatexArray(array)
+    def __init__(self, arraystretch=2.5, alignedstretch=2.5, evalf_n=None):
+        self.arraystretch = arraystretch
+        self.alignedstretch = alignedstretch
+        self._evalf_n = evalf_n
+
+    def __call__(self, array=None, *, arraystretch=None, alignedstretch=None, evalf=None):
+        """
+        Called when used as a function.
+
+        - ``la(array)`` -> wraps array as LatexArray
+        - ``la(arraystretch=2.0)`` -> returns a configured renderer for piping:
+          ``arr | la(arraystretch=2.0)``
+        - ``la(evalf=4)`` -> apply ``.evalf(4)`` to SymPy values before rendering
+        """
+        eff_array = arraystretch if arraystretch is not None else self.arraystretch
+        eff_aligned = alignedstretch if alignedstretch is not None else self.alignedstretch
+        eff_evalf = evalf if evalf is not None else self._evalf_n
+        if array is None:
+            return LatexRenderer(arraystretch=eff_array, alignedstretch=eff_aligned, evalf_n=eff_evalf)
+        return LatexArray(array, arraystretch=eff_array, alignedstretch=eff_aligned, evalf=eff_evalf)
 
     def __ror__(self, other):
         """Called when this object appears on the right side of |"""
-        return LatexArray(other)
+        return LatexArray(other, arraystretch=self.arraystretch, alignedstretch=self.alignedstretch, evalf=self._evalf_n)
+
+    def evalf(self, n=4):
+        """Return a configured renderer that calls ``.evalf(n)`` on SymPy values.
+
+        Usage: ``sol | la.evalf(4)``
+        """
+        return LatexRenderer(arraystretch=self.arraystretch, alignedstretch=self.alignedstretch, evalf_n=n)
 
 
 # Create the singleton instance that users will import
