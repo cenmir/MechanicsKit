@@ -16,11 +16,12 @@ class LatexArray:
         np.arange(10) | la
     """
 
-    def __init__(self, array, arraystretch=1.0, alignedstretch=2.5, evalf=None, simplify=False):
+    def __init__(self, array, arraystretch=1.0, alignedstretch=2.5, evalf=None, simplify=False, trigsimp=False):
         self._arraystretch = arraystretch
         self.alignedstretch = alignedstretch
         self.evalf = evalf
         self.simplify = simplify
+        self.trigsimp = trigsimp
         self._is_dict = isinstance(array, dict)
         # Detect SymPy objects and pass them through directly
         self._is_sympy = hasattr(array, '__module__') and array.__module__ and 'sympy' in array.__module__
@@ -46,8 +47,13 @@ class LatexArray:
 
         # Handle SymPy objects directly (Matrix, Eq, etc.)
         if self._is_sympy:
-            from sympy import latex as sympy_latex, simplify as sympy_simplify
+            from sympy import latex as sympy_latex, simplify as sympy_simplify, trigsimp as sympy_trigsimp
             obj = self._sympy_obj
+            if self.trigsimp:
+                try:
+                    obj = sympy_trigsimp(obj)
+                except Exception:
+                    pass
             if self.simplify:
                 try:
                     obj = sympy_simplify(obj)
@@ -154,6 +160,12 @@ class LatexArray:
 
         def to_latex(obj):
             if has_sympy and hasattr(obj, '__module__') and 'sympy' in str(getattr(obj, '__module__', '')):
+                if self.trigsimp:
+                    try:
+                        from sympy import trigsimp as sympy_trigsimp
+                        obj = sympy_trigsimp(obj)
+                    except Exception:
+                        pass
                 if self.simplify:
                     try:
                         from sympy import simplify as sympy_simplify
@@ -187,11 +199,12 @@ class LatexRenderer:
     # High priority to override NumPy's element-wise operations
     __array_priority__ = 1000
 
-    def __init__(self, arraystretch=1.0, alignedstretch=2.5, evalf_n=None, simplify_flag=False):
+    def __init__(self, arraystretch=1.0, alignedstretch=2.5, evalf_n=None, simplify_flag=False, trigsimp_flag=False):
         self._arraystretch = arraystretch
         self.alignedstretch = alignedstretch
         self._evalf_n = evalf_n
         self._simplify = simplify_flag
+        self._trigsimp = trigsimp_flag
 
     def _new(self, **overrides):
         """Return a new renderer with overridden config."""
@@ -200,6 +213,7 @@ class LatexRenderer:
             alignedstretch=self.alignedstretch,
             evalf_n=self._evalf_n,
             simplify_flag=self._simplify,
+            trigsimp_flag=self._trigsimp,
         )
         kwargs.update(overrides)
         return LatexRenderer(**kwargs)
@@ -211,9 +225,10 @@ class LatexRenderer:
             alignedstretch=self.alignedstretch,
             evalf=self._evalf_n,
             simplify=self._simplify,
+            trigsimp=self._trigsimp,
         )
 
-    def __call__(self, array=None, *, arraystretch=None, alignedstretch=None, evalf=None, simplify=None):
+    def __call__(self, array=None, *, arraystretch=None, alignedstretch=None, evalf=None, simplify=None, trigsimp=None):
         """
         Called when used as a function.
 
@@ -222,12 +237,14 @@ class LatexRenderer:
           ``arr | la(arraystretch=2.0)``
         - ``la(evalf=4)`` -> apply ``.evalf(4)`` to SymPy values before rendering
         - ``la(simplify=True)`` -> apply ``sp.simplify`` to SymPy values
+        - ``la(trigsimp=True)`` -> apply ``sp.trigsimp`` to SymPy values
         """
         overrides = {}
         if arraystretch is not None: overrides['arraystretch'] = arraystretch
         if alignedstretch is not None: overrides['alignedstretch'] = alignedstretch
         if evalf is not None: overrides['evalf_n'] = evalf
         if simplify is not None: overrides['simplify_flag'] = simplify
+        if trigsimp is not None: overrides['trigsimp_flag'] = trigsimp
         if array is None:
             return self._new(**overrides)
         return self._new(**overrides)._wrap(array)
@@ -256,6 +273,13 @@ class LatexRenderer:
         Usage: ``sol | la.simplify()``
         """
         return self._new(simplify_flag=True)
+
+    def trigsimp(self):
+        """Return a configured renderer that calls ``sp.trigsimp`` on SymPy values.
+
+        Usage: ``sol | la.trigsimp()``
+        """
+        return self._new(trigsimp_flag=True)
 
 
 # Create the singleton instance that users will import

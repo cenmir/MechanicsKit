@@ -28,6 +28,14 @@ from .latex_array import (
     LatexArray, la, display_labeled_latex,
     LatexExpression, latex_expression, ltx, labeled
 )
+
+# Apply Computer Modern math fonts to matplotlib globally on import
+try:
+    import matplotlib.pyplot as _plt
+    _plt.rcParams['mathtext.fontset'] = 'cm'
+    _plt.rcParams['font.family'] = 'serif'
+except ImportError:
+    pass
 from .mesh import Mesh, ELEMENT_TYPES
 from .one_array import OneArray
 from .patch import patch
