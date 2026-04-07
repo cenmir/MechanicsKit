@@ -39,7 +39,7 @@ from .help import quick_ref
 from .animation_utils import to_responsive_html
 
 # Version information
-__version__ = '0.4.0'
+__version__ = '0.5.0'
 
 def version():
     """

@@ -16,10 +16,11 @@ class LatexArray:
         np.arange(10) | la
     """
 
-    def __init__(self, array, arraystretch=2.5, alignedstretch=2.5, evalf=None):
-        self.arraystretch = arraystretch
+    def __init__(self, array, arraystretch=1.0, alignedstretch=2.5, evalf=None, simplify=False):
+        self._arraystretch = arraystretch
         self.alignedstretch = alignedstretch
         self.evalf = evalf
+        self.simplify = simplify
         self._is_dict = isinstance(array, dict)
         # Detect SymPy objects and pass them through directly
         self._is_sympy = hasattr(array, '__module__') and array.__module__ and 'sympy' in array.__module__
@@ -32,7 +33,7 @@ class LatexArray:
 
     def _wrap_stretch(self, latex_str):
         """Wrap a LaTeX matrix string with \\arraystretch."""
-        return f"$$ {{\\def\\arraystretch{{{self.arraystretch}}}{latex_str}}} $$"
+        return f"$$ {{\\def\\arraystretch{{{self._arraystretch}}}{latex_str}}} $$"
 
     def _repr_latex_(self):
         """
@@ -45,8 +46,16 @@ class LatexArray:
 
         # Handle SymPy objects directly (Matrix, Eq, etc.)
         if self._is_sympy:
-            from sympy import latex as sympy_latex
-            s = sympy_latex(self._sympy_obj).replace(r'\frac', r'\dfrac')
+            from sympy import latex as sympy_latex, simplify as sympy_simplify
+            obj = self._sympy_obj
+            if self.simplify:
+                try:
+                    obj = sympy_simplify(obj)
+                except Exception:
+                    pass
+            if self.evalf is not None and hasattr(obj, 'evalf'):
+                obj = obj.evalf(self.evalf)
+            s = sympy_latex(obj).replace(r'\frac', r'\dfrac')
             return self._wrap_stretch(s)
 
         array = self.array
@@ -145,6 +154,12 @@ class LatexArray:
 
         def to_latex(obj):
             if has_sympy and hasattr(obj, '__module__') and 'sympy' in str(getattr(obj, '__module__', '')):
+                if self.simplify:
+                    try:
+                        from sympy import simplify as sympy_simplify
+                        obj = sympy_simplify(obj)
+                    except Exception:
+                        pass
                 if self.evalf is not None and hasattr(obj, 'evalf'):
                     obj = obj.evalf(self.evalf)
                 return sympy_latex(obj).replace(r'\frac', r'\dfrac')
@@ -172,12 +187,33 @@ class LatexRenderer:
     # High priority to override NumPy's element-wise operations
     __array_priority__ = 1000
 
-    def __init__(self, arraystretch=2.5, alignedstretch=2.5, evalf_n=None):
-        self.arraystretch = arraystretch
+    def __init__(self, arraystretch=1.0, alignedstretch=2.5, evalf_n=None, simplify_flag=False):
+        self._arraystretch = arraystretch
         self.alignedstretch = alignedstretch
         self._evalf_n = evalf_n
+        self._simplify = simplify_flag
 
-    def __call__(self, array=None, *, arraystretch=None, alignedstretch=None, evalf=None):
+    def _new(self, **overrides):
+        """Return a new renderer with overridden config."""
+        kwargs = dict(
+            arraystretch=self._arraystretch,
+            alignedstretch=self.alignedstretch,
+            evalf_n=self._evalf_n,
+            simplify_flag=self._simplify,
+        )
+        kwargs.update(overrides)
+        return LatexRenderer(**kwargs)
+
+    def _wrap(self, obj):
+        return LatexArray(
+            obj,
+            arraystretch=self._arraystretch,
+            alignedstretch=self.alignedstretch,
+            evalf=self._evalf_n,
+            simplify=self._simplify,
+        )
+
+    def __call__(self, array=None, *, arraystretch=None, alignedstretch=None, evalf=None, simplify=None):
         """
         Called when used as a function.
 
@@ -185,24 +221,41 @@ class LatexRenderer:
         - ``la(arraystretch=2.0)`` -> returns a configured renderer for piping:
           ``arr | la(arraystretch=2.0)``
         - ``la(evalf=4)`` -> apply ``.evalf(4)`` to SymPy values before rendering
+        - ``la(simplify=True)`` -> apply ``sp.simplify`` to SymPy values
         """
-        eff_array = arraystretch if arraystretch is not None else self.arraystretch
-        eff_aligned = alignedstretch if alignedstretch is not None else self.alignedstretch
-        eff_evalf = evalf if evalf is not None else self._evalf_n
+        overrides = {}
+        if arraystretch is not None: overrides['arraystretch'] = arraystretch
+        if alignedstretch is not None: overrides['alignedstretch'] = alignedstretch
+        if evalf is not None: overrides['evalf_n'] = evalf
+        if simplify is not None: overrides['simplify_flag'] = simplify
         if array is None:
-            return LatexRenderer(arraystretch=eff_array, alignedstretch=eff_aligned, evalf_n=eff_evalf)
-        return LatexArray(array, arraystretch=eff_array, alignedstretch=eff_aligned, evalf=eff_evalf)
+            return self._new(**overrides)
+        return self._new(**overrides)._wrap(array)
 
     def __ror__(self, other):
         """Called when this object appears on the right side of |"""
-        return LatexArray(other, arraystretch=self.arraystretch, alignedstretch=self.alignedstretch, evalf=self._evalf_n)
+        return self._wrap(other)
 
     def evalf(self, n=4):
         """Return a configured renderer that calls ``.evalf(n)`` on SymPy values.
 
         Usage: ``sol | la.evalf(4)``
         """
-        return LatexRenderer(arraystretch=self.arraystretch, alignedstretch=self.alignedstretch, evalf_n=n)
+        return self._new(evalf_n=n)
+
+    def arraystretch(self, n=2.5):
+        """Return a configured renderer with the given matrix row stretch.
+
+        Usage: ``mat | la.arraystretch(2.5)``
+        """
+        return self._new(arraystretch=n)
+
+    def simplify(self):
+        """Return a configured renderer that calls ``sp.simplify`` on SymPy values.
+
+        Usage: ``sol | la.simplify()``
+        """
+        return self._new(simplify_flag=True)
 
 
 # Create the singleton instance that users will import
