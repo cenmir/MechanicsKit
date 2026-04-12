@@ -478,7 +478,7 @@ class LatexExpression:
         latex_expression("A=", A, ",\\ B=", B, precision=4)
     """
 
-    def __init__(self, *args, precision=2):
+    def __init__(self, *args, precision=2, arraystretch=None):
         """
         Parameters
         ----------
@@ -488,9 +488,12 @@ class LatexExpression:
             Arrays are converted to bmatrix format.
         precision : int, optional
             Number of decimal places for floats (default: 2)
+        arraystretch : float, optional
+            Row spacing multiplier (default: None, no override)
         """
         self.args = args
         self.precision = precision
+        self._arraystretch = arraystretch
 
     def _format_val(self, v):
         """Format a single value for LaTeX."""
@@ -498,7 +501,7 @@ class LatexExpression:
         try:
             if hasattr(v, '__module__') and v.__module__ and 'sympy' in v.__module__:
                 from sympy import latex as sympy_latex
-                return sympy_latex(v)
+                return sympy_latex(v).replace(r'\frac', r'\dfrac')
         except (AttributeError, ImportError):
             pass
 
@@ -519,7 +522,7 @@ class LatexExpression:
         try:
             if hasattr(array, '__module__') and 'sympy' in array.__module__:
                 from sympy import latex as sympy_latex
-                return sympy_latex(array)
+                return sympy_latex(array).replace(r'\frac', r'\dfrac')
         except (AttributeError, ImportError):
             pass
 
@@ -600,6 +603,8 @@ class LatexExpression:
                 parts.append(self._array_to_latex(arg))
 
         latex_str = "".join(parts)
+        if self._arraystretch is not None:
+            latex_str = rf"{{\def\arraystretch{{{self._arraystretch}}}{latex_str}}}"
         return f"$$ {latex_str} $$"
 
     def __str__(self):
@@ -613,7 +618,7 @@ class LatexExpression:
         return "".join(parts)
 
 
-def latex_expression(*args, precision=2):
+def latex_expression(*args, precision=2, arraystretch=None):
     """
     Create a LaTeX expression from variadic arguments of strings and arrays.
 
@@ -628,6 +633,8 @@ def latex_expression(*args, precision=2):
         Arrays are converted to bmatrix format.
     precision : int, optional
         Number of decimal places for floats (default: 2)
+    arraystretch : float, optional
+        Row spacing multiplier (default: None, no override)
 
     Returns
     -------
@@ -648,8 +655,11 @@ def latex_expression(*args, precision=2):
 
     >>> # With custom precision
     >>> ltx("A=", A, ",\\ B=", B, precision=4)
+
+    >>> # With row spacing
+    >>> ltx("A=", A, arraystretch=2.5)
     """
-    return LatexExpression(*args, precision=precision)
+    return LatexExpression(*args, precision=precision, arraystretch=arraystretch)
 
 
 # Short alias
