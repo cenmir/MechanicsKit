@@ -6,19 +6,51 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Version Update Guidelines
 
-**When to bump versions:**
-- **PATCH (0.1.X)**: Bug fixes, documentation updates, performance improvements
-- **MINOR (0.X.0)**: New features, new functions, new element types, backward-compatible changes
-- **MAJOR (X.0.0)**: Breaking changes, API changes that require user code updates (rare for educational packages)
+While in the 0.x series we deliberately move the minor slot slowly so the
+version number stays meaningful.
+
+**When to bump versions (pre-1.0 policy):**
+- **PATCH (0.X.Y → 0.X.Y+1)**: Bug fixes, documentation, performance, and
+  small additive refinements to existing functions (new kwargs, new optional
+  behavior). Most changes land here.
+- **MINOR (0.X.0 → 0.X+1.0)**: New public functions, new user-visible verbs,
+  or meaningful reshuffles of existing ones.
+- **MAJOR (X.0.0)**: Breaking changes that require user code updates.
+  Reserved for the 1.0 API commitment.
+
+**Rule of thumb:** if the change only adds an option to something that
+already exists, it's a patch. If it adds a thing the user can import or
+call that didn't exist before, it's a minor bump.
 
 **When to update `__version__` in `__init__.py`:**
-- After fixing bugs (increment patch)
-- After adding features (increment minor)
-- When preparing a release/tag (not on every commit)
+- Bump before `git push` (not on every commit) so each pushed state maps
+  to a distinct, installable version.
+- Keep `pyproject.toml` and `mechanicskit/__init__.py` in lockstep.
 
-**Claude will remind you** when changes warrant a version bump!
+A ``pre-push`` git hook prints this policy as a reminder at push time;
+see the top of the changelog entry for the change being pushed and
+decide patch vs. minor before pushing.
 
 ---
+
+## [0.6.1] - 2026-04-20
+
+### Added
+- `ltx(..., aligned=True)` wraps the composed expression in
+  `\begin{aligned}...\end{aligned}` for left-aligned multi-row equations.
+  Use `&` to mark the alignment column and `\\` to separate rows.
+- `la.shape()` chainable verb — `A | la.shape()` appends an `_{m \times n}`
+  subscript to the rendered matrix/vector. Sibling of the existing
+  `show_shape=True` kwarg.
+- `show_shape` is now honored by SymPy rendering and by the 1-D and 2-D
+  NumPy branches (previously plumbed through but not applied in all
+  branches).
+
+### Changed
+- `LatexExpression` (`ltx`) `precision` default changed from `2` to
+  `None` (full precision). When set, `precision=n` now also calls
+  `evalf(n)` on SymPy values rather than just formatting NumPy floats to
+  `n` decimals. Pass `precision=2` explicitly for the old behavior.
 
 ## [Unreleased]
 

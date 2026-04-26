@@ -28,6 +28,7 @@ from .latex_array import (
     LatexArray, la, display_labeled_latex,
     LatexExpression, latex_expression, ltx, labeled
 )
+# labeled is now an alias for ltx/latex_expression
 
 # Apply Computer Modern math fonts to matplotlib globally on import
 try:
@@ -47,7 +48,7 @@ from .help import quick_ref
 from .animation_utils import to_responsive_html
 
 # Version information
-__version__ = '0.6.0'
+__version__ = '0.6.1'
 
 def version():
     """

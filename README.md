@@ -258,6 +258,20 @@ plt.show()
 
 ## Update History
 
+**April 2026 (v0.6.1)**
+- `ltx(..., aligned=True)` wraps the composed expression in `\begin{aligned}...\end{aligned}` for left-aligned multi-row equations.
+- `la.shape()` chainable verb — `A | la.shape()` appends an `m × n` subscript. Sibling of the existing `show_shape=True` kwarg, which is now also honored by SymPy and 1-D NumPy rendering.
+- `ltx(precision=...)` default changed from `2` to `None` (full precision); when set, applies `evalf(n)` to SymPy values.
+
+**April 2026 (v0.6.0)**
+- Background version check on import — warns once per day if a newer release is available on GitHub.
+- `ltx()` honors the global arraystretch setting and emits `\dfrac` for fractions.
+
+**March 2026 (v0.5.0)**
+- `la` gained chainable verbs: `.simplify()`, `.trigsimp()`, `.arraystretch(n)`, `.evalf(n)`. Use as `A | la.simplify()` etc.
+- Computer Modern math fonts applied to matplotlib globally on import for consistent typography.
+- `LatexArray` now passes SymPy expressions through directly (no `.tolist()` round-trip), uses `\dfrac` for fractions, and exposes configurable `arraystretch` / `evalf`.
+
 **April 2026 (v0.4.0)**
 - Added `arrow()` function for drawing 2D arrows in data coordinates. Accepts SymPy Matrices directly. Supports direction mode, point-to-point mode, lists of vectors, and X/Y/U/V arrays.
 - Added dict support to `la` pipe for displaying SymPy solver output as aligned equations.

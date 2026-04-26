@@ -16,12 +16,13 @@ class LatexArray:
         np.arange(10) | la
     """
 
-    def __init__(self, array, arraystretch=1.0, alignedstretch=2.5, evalf=None, simplify=False, trigsimp=False):
+    def __init__(self, array, arraystretch=1.0, alignedstretch=2.5, evalf=None, simplify=False, trigsimp=False, show_shape=False):
         self._arraystretch = arraystretch
         self.alignedstretch = alignedstretch
         self.evalf = evalf
         self.simplify = simplify
         self.trigsimp = trigsimp
+        self.show_shape = show_shape
         self._is_dict = isinstance(array, dict)
         # Detect SymPy objects and pass them through directly
         self._is_sympy = hasattr(array, '__module__') and array.__module__ and 'sympy' in array.__module__
@@ -62,6 +63,9 @@ class LatexArray:
             if self.evalf is not None and hasattr(obj, 'evalf'):
                 obj = obj.evalf(self.evalf)
             s = sympy_latex(obj).replace(r'\frac', r'\dfrac')
+            if self.show_shape and hasattr(obj, 'shape'):
+                rows, cols = obj.shape
+                s += f"_{{{rows} \\times {cols}}}"
             return self._wrap_stretch(s)
 
         array = self.array
@@ -109,6 +113,8 @@ class LatexArray:
                 row_strs.append(get_val(array[-1]))  # and last element
                 latex_str += " & ".join(row_strs) + "\n"
                 latex_str += "\\end{bmatrix}^\\mathsf T"
+            if self.show_shape:
+                latex_str += f"_{{{n} \\times 1}}"
             return self._wrap_stretch(latex_str)
 
         # --- Branch 2: 2D Arrays (Matrices) ---
@@ -138,6 +144,8 @@ class LatexArray:
                             row_strs.append(get_val(array[i, j]))
                 latex_str += " & ".join(row_strs) + " \\\\\n"
             latex_str += "\\end{bmatrix}"
+            if self.show_shape:
+                latex_str += f"_{{{n_rows} \\times {n_cols}}}"
             return self._wrap_stretch(latex_str)
 
         # --- Branch 3: Other ---
@@ -185,26 +193,45 @@ class LatexArray:
 
 class LatexRenderer:
     """
-    A singleton helper class that enables both function call and pipe syntax.
+    LaTeX renderer for arrays, matrices, and SymPy expressions.
 
-    Usage:
-        from mechanicskit import la
+    Pipe syntax (recommended):
+        A | la                      # render array/matrix/SymPy object
+        sol | la.evalf(3)           # evaluate to 3 significant figures
+        M | la.simplify()           # apply sp.simplify before rendering
+        M | la.trigsimp()           # apply sp.trigsimp before rendering
+        A | la.arraystretch(2.5)    # increase row spacing
+        A | la.shape()              # show dimensions as subscript
 
-        # Function call syntax
-        la(np.array([1, 2, 3]))
+    Function call syntax:
+        la(A)                       # render array
+        la(A, evalf=3)              # with evalf
+        la(A, show_shape=True)      # with dimensions
 
-        # Pipe syntax
-        np.array([1, 2, 3]) | la
+    Keyword arguments (via function call or pipe):
+        arraystretch : float    Row spacing multiplier (default: 1.0)
+        alignedstretch : float  Row spacing for aligned/dict display (default: 2.5)
+        evalf : int             Significant figures for SymPy (default: None)
+        simplify : bool         Apply sp.simplify (default: False)
+        trigsimp : bool         Apply sp.trigsimp (default: False)
+        show_shape : bool       Show m x n subscript (default: False)
+
+    Chainable methods:
+        .evalf(n)          .simplify()        .trigsimp()
+        .arraystretch(n)   .shape()
+
+    Supports: NumPy arrays, SymPy Matrix/Eq/expressions, dicts (as aligned equations)
     """
     # High priority to override NumPy's element-wise operations
     __array_priority__ = 1000
 
-    def __init__(self, arraystretch=1.0, alignedstretch=2.5, evalf_n=None, simplify_flag=False, trigsimp_flag=False):
+    def __init__(self, arraystretch=1.0, alignedstretch=2.5, evalf_n=None, simplify_flag=False, trigsimp_flag=False, show_shape=False):
         self._arraystretch = arraystretch
         self.alignedstretch = alignedstretch
         self._evalf_n = evalf_n
         self._simplify = simplify_flag
         self._trigsimp = trigsimp_flag
+        self._show_shape = show_shape
 
     def _new(self, **overrides):
         """Return a new renderer with overridden config."""
@@ -214,6 +241,7 @@ class LatexRenderer:
             evalf_n=self._evalf_n,
             simplify_flag=self._simplify,
             trigsimp_flag=self._trigsimp,
+            show_shape=self._show_shape,
         )
         kwargs.update(overrides)
         return LatexRenderer(**kwargs)
@@ -226,9 +254,10 @@ class LatexRenderer:
             evalf=self._evalf_n,
             simplify=self._simplify,
             trigsimp=self._trigsimp,
+            show_shape=self._show_shape,
         )
 
-    def __call__(self, array=None, *, arraystretch=None, alignedstretch=None, evalf=None, simplify=None, trigsimp=None):
+    def __call__(self, array=None, *, arraystretch=None, alignedstretch=None, evalf=None, simplify=None, trigsimp=None, show_shape=None):
         """
         Called when used as a function.
 
@@ -238,6 +267,7 @@ class LatexRenderer:
         - ``la(evalf=4)`` -> apply ``.evalf(4)`` to SymPy values before rendering
         - ``la(simplify=True)`` -> apply ``sp.simplify`` to SymPy values
         - ``la(trigsimp=True)`` -> apply ``sp.trigsimp`` to SymPy values
+        - ``la(show_shape=True)`` -> display matrix dimensions as subscript
         """
         overrides = {}
         if arraystretch is not None: overrides['arraystretch'] = arraystretch
@@ -245,6 +275,7 @@ class LatexRenderer:
         if evalf is not None: overrides['evalf_n'] = evalf
         if simplify is not None: overrides['simplify_flag'] = simplify
         if trigsimp is not None: overrides['trigsimp_flag'] = trigsimp
+        if show_shape is not None: overrides['show_shape'] = show_shape
         if array is None:
             return self._new(**overrides)
         return self._new(**overrides)._wrap(array)
@@ -280,6 +311,13 @@ class LatexRenderer:
         Usage: ``sol | la.trigsimp()``
         """
         return self._new(trigsimp_flag=True)
+
+    def shape(self):
+        """Return a configured renderer that displays matrix dimensions as subscript.
+
+        Usage: ``A | la.shape()``
+        """
+        return self._new(show_shape=True)
 
 
 # Create the singleton instance that users will import
@@ -478,7 +516,7 @@ class LatexExpression:
         latex_expression("A=", A, ",\\ B=", B, precision=4)
     """
 
-    def __init__(self, *args, precision=2, arraystretch=None):
+    def __init__(self, *args, precision=None, arraystretch=None, show_shape=False, aligned=False):
         """
         Parameters
         ----------
@@ -487,13 +525,22 @@ class LatexExpression:
             Strings are passed through as-is.
             Arrays are converted to bmatrix format.
         precision : int, optional
-            Number of decimal places for floats (default: 2)
+            Number of significant figures. For SymPy expressions, calls evalf(n).
+            For NumPy floats, formats to n decimal places. (default: None, full precision)
         arraystretch : float, optional
             Row spacing multiplier (default: None, no override)
+        show_shape : bool, optional
+            Display matrix dimensions as subscript (default: False)
+        aligned : bool, optional
+            Wrap the composed expression in ``\\begin{aligned} ... \\end{aligned}``
+            for left-aligned multi-row equations. Rows are separated by ``\\\\``
+            and aligned on ``&`` as usual. (default: False)
         """
         self.args = args
         self.precision = precision
         self._arraystretch = arraystretch
+        self._show_shape = show_shape
+        self._aligned = aligned
 
     def _format_val(self, v):
         """Format a single value for LaTeX."""
@@ -501,14 +548,17 @@ class LatexExpression:
         try:
             if hasattr(v, '__module__') and v.__module__ and 'sympy' in v.__module__:
                 from sympy import latex as sympy_latex
+                if self.precision is not None:
+                    v = v.evalf(self.precision)
                 return sympy_latex(v).replace(r'\frac', r'\dfrac')
         except (AttributeError, ImportError):
             pass
 
+        np_precision = self.precision if self.precision is not None else 2
         if isinstance(v, (np.complexfloating, complex)):
-            return f"{v.real:.{self.precision}f}{v.imag:+.{self.precision}f}j"
+            return f"{v.real:.{np_precision}f}{v.imag:+.{np_precision}f}j"
         elif isinstance(v, (float, np.floating)):
-            return f"{v:.{self.precision}f}"
+            return f"{v:.{np_precision}f}"
         else:
             return str(v)
 
@@ -522,7 +572,13 @@ class LatexExpression:
         try:
             if hasattr(array, '__module__') and 'sympy' in array.__module__:
                 from sympy import latex as sympy_latex
-                return sympy_latex(array).replace(r'\frac', r'\dfrac')
+                if self.precision is not None and hasattr(array, 'evalf'):
+                    array = array.evalf(self.precision)
+                s = sympy_latex(array).replace(r'\frac', r'\dfrac')
+                if self._show_shape and hasattr(array, 'shape'):
+                    rows, cols = array.shape
+                    s += f"_{{{rows} \\times {cols}}}"
+                return s
         except (AttributeError, ImportError):
             pass
 
@@ -548,6 +604,8 @@ class LatexExpression:
                 values = [self._format_val(v) for v in array]
             latex_str += " \\\\ ".join(values)
             latex_str += "\\end{bmatrix}"
+            if self._show_shape:
+                latex_str += f"_{{{n} \\times 1}}"
             return latex_str
 
         # 2D array (matrix)
@@ -585,65 +643,79 @@ class LatexExpression:
 
             latex_str += " \\\\ ".join(rows)
             latex_str += "\\end{bmatrix}"
+            if self._show_shape:
+                latex_str += f"_{{{n_rows} \\times {n_cols}}}"
             return latex_str
 
         # Higher dimensions - fallback
         return f"\\text{{{repr(array)}}}"
+
+    def _build_inner(self):
+        """Join positional args into a single LaTeX string, applying aligned/arraystretch wrappers."""
+        parts = []
+        for arg in self.args:
+            if isinstance(arg, str):
+                parts.append(arg)
+            else:
+                parts.append(self._array_to_latex(arg))
+        latex_str = "".join(parts)
+        if self._aligned:
+            latex_str = r"\begin{aligned}" + latex_str + r"\end{aligned}"
+        if self._arraystretch is not None:
+            latex_str = rf"{{\def\arraystretch{{{self._arraystretch}}}{latex_str}}}"
+        return latex_str
 
     def _repr_latex_(self):
         """
         Return the LaTeX string for notebook display.
         Called automatically by Jupyter/Marimo.
         """
-        parts = []
-        for arg in self.args:
-            if isinstance(arg, str):
-                parts.append(arg)
-            else:
-                parts.append(self._array_to_latex(arg))
-
-        latex_str = "".join(parts)
-        if self._arraystretch is not None:
-            latex_str = rf"{{\def\arraystretch{{{self._arraystretch}}}{latex_str}}}"
-        return f"$$ {latex_str} $$"
+        return f"$$ {self._build_inner()} $$"
 
     def __str__(self):
         """Return the raw LaTeX string (without $$ delimiters)."""
-        parts = []
-        for arg in self.args:
-            if isinstance(arg, str):
-                parts.append(arg)
-            else:
-                parts.append(self._array_to_latex(arg))
-        return "".join(parts)
+        return self._build_inner()
 
 
-def latex_expression(*args, precision=2, arraystretch=None):
+def latex_expression(*args, precision=None, arraystretch=None, show_shape=False, aligned=False):
     """
-    Create a LaTeX expression from variadic arguments of strings and arrays.
+    Labeled LaTeX display for matrices, vectors, and SymPy expressions.
 
-    This function enables the pedagogical pattern of defining multiple
-    matrices/vectors in a single display, such as "Let A=..., B=..., x=...".
+    Combines LaTeX strings with arrays/expressions in a single display line.
+    Also available as: ltx, labeled
+
+    Usage:
+        ltx(r"A =", A)                          # label + matrix
+        ltx(r"A =", A, r",\\ B =", B)           # multiple items
+        ltx(r"v(t) =", v, precision=3)           # 3 significant figures
+        ltx(r"\\dot{\\bm r} =", M, arraystretch=2.5)  # row spacing
+        ltx(r"K =", K, show_shape=True)          # show m x n subscript
+        ltx(r"x(t) &=", x_sol, r"\\\\ y(t) &=", y, aligned=True)  # left-aligned rows
 
     Parameters
     ----------
     *args : str or array_like
-        Alternating strings (LaTeX fragments) and arrays/values to format.
+        Alternating LaTeX strings and arrays/values.
         Strings are passed through as-is.
         Arrays are converted to bmatrix format.
     precision : int, optional
-        Number of decimal places for floats (default: 2)
+        Significant figures. SymPy: calls evalf(n). NumPy: decimal places. (default: None)
     arraystretch : float, optional
-        Row spacing multiplier (default: None, no override)
+        Row spacing multiplier (default: None)
+    show_shape : bool, optional
+        Display matrix dimensions as subscript (default: False)
+    aligned : bool, optional
+        Wrap output in ``\\begin{aligned}...\\end{aligned}`` for left-aligned
+        multi-row equations. Use ``&`` to mark the alignment column and ``\\\\``
+        to separate rows. (default: False)
 
     Returns
     -------
     LatexExpression
-        An object that renders as LaTeX in Jupyter/Marimo notebooks.
+        Object that renders as LaTeX in Jupyter/Marimo notebooks.
 
     Examples
     --------
-    >>> import numpy as np
     >>> from mechanicskit import ltx
     >>>
     >>> A = np.array([[1, 2], [3, 4]])
@@ -659,8 +731,9 @@ def latex_expression(*args, precision=2, arraystretch=None):
     >>> # With row spacing
     >>> ltx("A=", A, arraystretch=2.5)
     """
-    return LatexExpression(*args, precision=precision, arraystretch=arraystretch)
+    return LatexExpression(*args, precision=precision, arraystretch=arraystretch, show_shape=show_shape, aligned=aligned)
 
 
-# Short alias
+# Short aliases
 ltx = latex_expression
+labeled = latex_expression
