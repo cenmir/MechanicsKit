@@ -33,6 +33,13 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.6.2] - 2026-05-03
+
+### Added
+- `to_responsive_html(..., default_mode='reflect'|'once'|'loop')` exposes
+  the JS player's mode dropdown so callers can preselect ping-pong
+  ('reflect') or single-shot ('once') playback. Default unchanged ('loop').
+
 ## [0.6.1] - 2026-04-20
 
 ### Added

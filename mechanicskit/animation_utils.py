@@ -7,7 +7,7 @@ Provides helper functions for creating interactive animations in Jupyter/marimo 
 from IPython.display import HTML
 
 
-def to_responsive_html(anim, container_id='anim-container', autoplay=True):
+def to_responsive_html(anim, container_id='anim-container', autoplay=True, default_mode='loop'):
     """
     Convert a matplotlib FuncAnimation to responsive HTML with optional autoplay.
 
@@ -22,6 +22,9 @@ def to_responsive_html(anim, container_id='anim-container', autoplay=True):
         HTML ID for the container div (default: 'anim-container')
     autoplay : bool, optional
         Whether to automatically start the animation (default: True)
+    default_mode : {'loop', 'once', 'reflect'}, optional
+        Initial selection of the player's mode dropdown (default: 'loop').
+        'reflect' plays forward then backward in a continuous ping-pong.
 
     Returns
     -------
@@ -45,13 +48,12 @@ def to_responsive_html(anim, container_id='anim-container', autoplay=True):
 
     Notes
     -----
-    - The animation loops by default (uses `default_mode='loop'`)
+    - The player mode defaults to 'loop'; pass `default_mode='reflect'` for ping-pong.
     - The responsive CSS ensures the animation scales to fit the container width
     - Autoplay uses JavaScript to click the play button after the page loads
     - The container ID must be unique if multiple animations are on the same page
     """
-    # Get the HTML with loop mode enabled
-    anim_html = anim.to_jshtml(default_mode='loop')
+    anim_html = anim.to_jshtml(default_mode=default_mode)
 
     # Create autoplay script if requested
     autoplay_script = ''
