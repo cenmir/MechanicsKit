@@ -46,9 +46,10 @@ from .gaussint import gaussint
 from .colormap_utils import colorbar, cmap
 from .help import quick_ref
 from .animation_utils import to_responsive_html
+from .markdown import md, Markdown
 
 # Version information
-__version__ = '0.6.2'
+__version__ = '0.7.0'
 
 def version():
     """
@@ -157,4 +158,5 @@ __all__ = [
     'arrow',
     'quick_ref',
     'to_responsive_html',
+    'md', 'Markdown',
 ]

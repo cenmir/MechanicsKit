@@ -126,8 +126,62 @@ ltx("A=", A, ",\\ B=", B, precision=4)
 
 
 
+### Markdown with type-aware interpolation: `mk.md`
 
+`md(template)` is a markdown helper that interpolates variables from the
+calling cell's namespace and dispatches on type. Output is **markdown
+source** — the same value renders correctly in marimo, Jupyter, and
+quarto via `_repr_markdown_`, `_mime_("text/markdown", ...)`, and a
+markdown-source-preserving `__format__`.
 
+#### What it does over a plain f-string
+
+- No `f` prefix — `{var}` looks up `var` in the cell scope; arithmetic
+  and method calls work inside `{...}` (e.g. `{F_st/1000:.2f}`,
+  `{obj.attr}`).
+- Type dispatch: `ndarray` → markdown table (≤8×8) or truncated
+  `bmatrix` (>8×8); `DataFrame` / `list[dict]` / `list[list]` →
+  markdown table; `LatexArray` / `ltx(...)` → LaTeX; scalars honor
+  Python format specs.
+- Returns **markdown source**, not pre-rendered HTML, so quarto can
+  apply its own KaTeX, table styling, and cross-references.
+
+#### Usage
+
+```python
+import numpy as np
+from mechanicskit import md, ltx
+
+# Scalar with format spec
+a = 3.14159
+md("$a = {a:.2f}$")              # -> "$a = 3.14$"
+
+# Arithmetic in placeholder (str.format alone can't do this)
+F_st = 89000.0
+md("$F_0 = {F_st/1000:.2f}$ kN")  # -> "$F_0 = 89.00$ kN"
+
+# 2-D ndarray becomes a markdown table
+K = np.array([[2, -1], [-1, 2]])
+md("Stiffness matrix:\n\n{K}")
+
+# Compose with ltx for LaTeX bmatrix instead
+md("Stiffness: {K_ltx}", K_ltx=ltx(r"K = ", K))
+
+# DataFrames via to_markdown()
+md("Nodal displacements:\n\n{df}\n\nTotal: {df.shape[0]} nodes.")
+```
+
+#### Brace escaping
+
+`mk.md` uses Python's `str.format` rules. To write a literal `{` or `}`
+(common in LaTeX), double them:
+
+```python
+md(r"$F = \dfrac{{1}}{{2}} m a^2$")   # -> "$F = \dfrac{1}{2} m a^2$"
+```
+
+See [examples/notebooks/examples_md.ipynb](examples/notebooks/examples_md.ipynb)
+for the full set of patterns including a real parameter table.
 
 ### Pedagogical FEM Mesh Tools
 
@@ -257,6 +311,10 @@ plt.show()
 
 
 ## Update History
+
+**April 2026 (v0.7.0)**
+- Added `mk.md(template)` — type-aware markdown formatter that interpolates from the caller's namespace and dispatches on value type (`LatexArray` / `ltx` → LaTeX; ndarray ≤8×8 / `DataFrame` / `list[dict]` / `list[list]` → markdown table; ndarray >8×8 → truncated `bmatrix`; scalars honor format specs). Output is markdown source (renders in marimo, Jupyter, and quarto). Arithmetic and method calls work inside `{...}` without needing the `f` prefix.
+- New dependency: `tabulate` (used for the table rendering paths).
 
 **April 2026 (v0.6.1)**
 - `ltx(..., aligned=True)` wraps the composed expression in `\begin{aligned}...\end{aligned}` for left-aligned multi-row equations.

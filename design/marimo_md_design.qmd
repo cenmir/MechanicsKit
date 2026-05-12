@@ -1,0 +1,278 @@
+---
+title: "`mk.md` — design notes"
+subtitle: "A markdown helper whose **output is markdown source**, not `mo.Html`"
+author: "MechanicsKit"
+format:
+  html:
+    toc: true
+    code-fold: false
+---
+
+## What this is, said sharply
+
+`mk.md(template)` takes a template string with `{var}` placeholders, looks
+the variables up in the calling cell's namespace, formats them as **markdown
+source**, and returns an object whose primary representation is that
+markdown. Quarto, marimo, Jupyter, and `print()` all receive markdown text
+and render it however they want.
+
+The key word is *source*. Not HTML, not a `marimo.Html` blob — markdown.
+
+## How marimo does it (so we know what we're adding to)
+
+Reading `marimo/_output/md.py` directly:
+
+- **`mo.md` does no interpolation.** It receives an already-formatted
+  string. The f-string in `mo.md(f"…{x}…")` is evaluated by Python before
+  `mo.md` is called. Marimo plays no part in the substitution.
+- **Markdown is rendered server-side by `python-markdown`** with a heavy
+  `pymdownx` extension stack: tables, `arithmatex` for LaTeX, superfences,
+  tasklist, footnotes, iconify, and friends. The result is HTML wrapped in
+  `<span class="markdown prose …">`.
+- **The returned `_md` object is already dual-protocol.** It implements
+  `_repr_markdown_()` returning the raw source, and `_mime_()` returning
+  `("text/markdown", …)` — source in non-interactive contexts, rendered
+  HTML otherwise. Quarto and Jupyter pick the markdown branch.
+- **`__format__` is overridden to return the markdown source**, not the
+  HTML. This makes nested `mo.md` calls compose under f-string
+  interpolation: `mo.md(f"outer… {inner_mo_md} …outer")` keeps `inner`'s
+  markdown intact instead of flattening it to one line of HTML. Worth
+  borrowing on our `Markdown` class for the same reason.
+
+So our wrapper is not retro-fitting a missing protocol — `mo.md` already
+exports `_repr_markdown_`. What it is retro-fitting is **what gets
+interpolated in the first place**.
+
+## Why this is not "just an f-string"
+
+A plain f-string runs Python's `__format__` on each placeholder. For
+NumPy that gives you `repr(ndarray)`; the resulting string is then handed
+to `mo.md` and stored verbatim in `_markdown_text`. By the time quarto
+or marimo's python-markdown sees the source, `[[1 2]\n [3 4]]` is baked
+in. There is no second chance.
+
+`mk.md`'s job is to intercept the substitution and run each value through
+a **type-aware dispatcher** before the source is finalized:
+
+| Type of `A`       | What `{A}` becomes                                    |
+|-------------------|-------------------------------------------------------|
+| `int`, `float`, `str` | `str(A)` — same as f-string                       |
+| `LatexArray`      | the LaTeX source from `_repr_latex_` (already `$$…$$`) |
+| `LatexExpression` | the LaTeX source, wrappable via format spec `{A:math}` |
+| `numpy.ndarray` (2-D, ≤ 8×8) | markdown table via `tabulate`                |
+| `numpy.ndarray` (2-D, > 8×8) | truncated LaTeX `bmatrix` (matches `LatexArray`'s 8×8 truncation) |
+| `pandas.DataFrame`| `df.to_markdown()` — markdown table (`tabulate`)     |
+| `list[list]` / `list[dict]` | markdown table via `tabulate`              |
+| `marimo.Html` / UI | passed through verbatim (whatever its `__format__` returns) |
+
+Figures (matplotlib, plotly) are deliberately out of scope: they belong in
+their own cell or quarto chunk so quarto can attach captions, cross-refs,
+and sizing. Inlining base64 PNGs in markdown defeats that.
+
+The user writes one line. The wrapper picks the right markdown
+serialization. The renderer (marimo's python-markdown, quarto's pandoc)
+renders the resulting markdown. There is no equivalent f-string idiom.
+
+A second, smaller win: dropping the `f` prefix and the `mo.md(...)`
+boilerplate. The frame walk that enables it is needed for the dispatcher
+anyway, so it costs nothing extra.
+
+## Concrete examples
+
+### Real example: a parameter table
+
+This is the kind of cell `mk.md` exists for. Today, written with `mo.md`
+and an f-string:
+
+```python
+mo.md(f"""
+| Beteckning   | Beskrivning                        | Värde                  | Enhet      |
+|:---          |:---                                |:---                    |:---        |
+| $d$          | Skruvgäng metrisk diameter         | M{skruvStandard.value} | M standard |
+| $P$          | Gängstigning grov                  | {P}                    | mm         |
+| $F_{{st}}$   | Sträckkraft $R_{{p02}} \\cdot A_s$ | {F_st/1000:0.2f}       | kN         |
+| $M_{{åt}}$   | Åtdragningsmoment                  | {M_åt:0.2f}            | Nm         |
+""")
+```
+
+The same cell with `mk.md` is identical apart from the prefix:
+
+```python
+mk.md("""
+| Beteckning   | Beskrivning                        | Värde                  | Enhet      |
+|:---          |:---                                |:---                    |:---        |
+| $d$          | Skruvgäng metrisk diameter         | M{skruvStandard.value} | M standard |
+| $P$          | Gängstigning grov                  | {P}                    | mm         |
+| $F_{{st}}$   | Sträckkraft $R_{{p02}} \\cdot A_s$ | {F_st/1000:0.2f}       | kN         |
+| $M_{{åt}}$   | Åtdragningsmoment                  | {M_åt:0.2f}            | Nm         |
+""")
+```
+
+That is the floor of what the wrapper does on a cell like this: drop the
+`f`, drop the `mo.md(...)`. The ceiling — type-aware rendering — kicks in
+the moment one of those `{...}` resolves to an `ndarray`, a `LatexArray`,
+or a `DataFrame` instead of a scalar.
+
+**Important consequence for the implementation.** This example contains
+`{F_st/1000:0.2f}` — arithmetic inside the placeholder. Vanilla `str.format`
+does **not** support that; it allows only `name`, `name.attr`, and
+`name[key]`. To keep this example working without a rewrite, our
+`string.Formatter` subclass has to override `get_field` and `eval` the
+field text as a Python expression in the caller's namespace. That is
+deferred-f-string semantics, and it is the price of "no `f` prefix":
+
+```python
+class _MkFormatter(string.Formatter):
+    def __init__(self, ns):
+        self._ns = ns
+    def get_field(self, field_name, args, kwargs):
+        return eval(field_name, self._ns), field_name
+```
+
+`eval` here is fine — it runs in the cell's own namespace, which the user
+already controls.
+
+### A matrix and its eigenvalues
+
+```python
+K = np.array([[2, -1], [-1, 2]])
+eigs = np.linalg.eigvals(K)
+mk.md(r"""
+The element stiffness matrix is
+
+{K}
+
+with eigenvalues {eigs}.
+""")
+```
+
+`{K}` is a 2×2 ndarray, so it renders as a markdown table. `{eigs}` is a
+1-D ndarray and renders inline. Want LaTeX `bmatrix` instead? Wrap with
+`ltx`:
+
+```python
+mk.md("The element stiffness matrix is {K_ltx}", K_ltx=ltx(K))
+```
+
+### A markdown table from a DataFrame
+
+```python
+import pandas as pd
+df = pd.DataFrame({"node": [1, 2, 3], "u_x": [0.0, 1.2, 2.4]})
+mk.md("""
+## Nodal displacements
+
+{df}
+
+Total: {df.shape[0]} nodes.
+""")
+```
+
+Quarto renders the table with its own CSS, applies cross-ref tags, etc.
+Marimo renders the same markdown via its KaTeX/markdown pipeline. Same
+input, two correct outputs.
+
+## API sketch
+
+```python
+class Markdown:
+    """Markdown source with dual rendering for quarto + marimo + jupyter."""
+    def __init__(self, text: str):
+        self.text = text
+    def __str__(self) -> str:
+        return self.text
+    def _repr_markdown_(self) -> str:    # quarto / jupyter pick this up
+        return self.text
+    def _mime_(self):                    # marimo's preferred protocol
+        return "text/markdown", self.text
+
+
+def md(template: str) -> Markdown:
+    frame = inspect.currentframe().f_back
+    ns = {**frame.f_globals, **frame.f_locals}
+    formatter = _MkFormatter(ns)         # eval-aware Formatter subclass
+    return Markdown(formatter.vformat(template, (), {}))
+```
+
+`_MkFormatter` overrides two methods. `get_field` resolves arbitrary Python
+expressions (so `{F_st/1000}`, `{a.b[0]}`, `{f(x)}` all work). `format_field`
+holds the type dispatcher:
+
+```python
+def format_field(self, value, spec):
+    if spec:
+        return format(value, spec)        # respect user's explicit spec
+    return _default_render(value)         # type dispatch, table above
+```
+
+`_default_render` is a small `singledispatch` table — one branch per type in
+the table above. Adding a new type later means one new dispatch arm, not a
+new function. The wrapper is intentionally not a templating engine; it
+just teaches `str.format` about MechanicsKit's data types.
+
+## Escaping
+
+`str.format` still owns `{` and `}`, so LaTeX braces double up — same rule
+as the f-string version of the table example above (`$F_{{st}}$`,
+`$R_{{p02}}$`):
+
+```python
+mk.md(r"$F = \dfrac{{1}}{{2}} {F1}$")
+#                    ^^^   ^^^         literal { } in LaTeX
+#                                ^^^^  variable F1
+```
+
+This is the cost of "no `f` prefix and named lookup". Worth it; document
+loudly.
+
+## Decisions locked in
+
+- **Name:** `mk.md`. (Yes, `md` is also "mass" in dynamics; users can
+  shadow with `from mechanicskit import md as markdown` if it bites.)
+- **Table threshold:** 8×8. ndarrays at or below that render as markdown
+  tables; larger ones fall back to truncated LaTeX `bmatrix`, matching
+  `LatexArray`'s existing truncation behavior.
+- **Tables:** `tabulate` is a hard dependency. One library serves
+  ndarray, `list[list]`, and DataFrame paths uniformly — pandas'
+  `df.to_markdown()` is also `tabulate` underneath, so this aligns the
+  whole table story on one engine.
+- **Figures:** out of scope. Figures stay in their own cells/chunks.
+
+## Behavior on unrecognized types and missing variables
+
+Match `mo.md` / f-string semantics: lenient on type, strict on lookup.
+
+- A placeholder whose value falls through the type table (`None`, a
+  dataclass, a Sympy `Expr` we haven't taught it about, anything) renders
+  as `str(value)`. That is what an f-string would do, and it is what
+  marimo's f-string-based pipeline already does today.
+- A placeholder whose **name** can't be resolved in the caller's
+  namespace raises a clear `NameError` with the missing name. Silent
+  failure on undefined variables is the kind of thing that wastes a
+  lecture.
+
+## Format-spec hooks
+
+Skipped in v1. No `{x:math}`, no `{x:matrix}`. Standard format specs
+(`{x:0.2f}`, `{x:>10}`) keep working because `_MkFormatter.format_field`
+falls through to Python's `format(value, spec)` for any spec it doesn't
+recognize — and after this decision, it doesn't recognize any.
+
+If a user wants LaTeX composition, they call `ltx(...)` and interpolate
+its result:
+
+```python
+mk.md("Stiffness: {expr}", expr=ltx(r"K = ", K, r"\,N/m"))
+```
+
+That keeps the API surface flat: one verb per concept (`md` for
+markdown, `ltx` for LaTeX, `la` for arrays). No new mini-language to
+learn inside `{...}`.
+
+## Out of scope (for v1)
+
+- Cross-references, citations, figure numbering — these are quarto's job
+  and our markdown output already passes through to it.
+- Custom directives (`{.callout-note}` etc.) — those are just markdown,
+  users can write them in the template and they'll work in quarto.
+- Caching / memoization — the per-call cost is negligible.

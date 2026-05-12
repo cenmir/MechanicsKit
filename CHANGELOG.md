@@ -33,6 +33,36 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.7.0] - 2026-04-26
+
+### Added
+- **`mk.md(template)` — type-aware markdown formatter.** Interpolates
+  variables from the calling cell's namespace (no `f` prefix) and
+  dispatches on type before producing the final markdown source:
+  - `LatexArray`, `LatexExpression`, and any object with `_repr_latex_`
+    pass through their LaTeX (already `$$…$$`-wrapped).
+  - 2-D `ndarray` ≤ 8×8 → markdown table.
+  - 2-D `ndarray` > 8×8 → truncated LaTeX `bmatrix` (matches `LatexArray`).
+  - 1-D `ndarray` → comma-separated inline.
+  - `pandas.DataFrame` (lazy registration) → `df.to_markdown()`.
+  - `list[dict]` / `list[list]` → markdown table.
+  - Other types fall through to `str(value)` (matches f-string behavior).
+- Output is **markdown source**, not pre-rendered HTML. The returned
+  `Markdown` object exposes `_repr_markdown_` (Jupyter, quarto),
+  `_mime_("text/markdown", …)` (marimo), and a `__format__` that returns
+  markdown source so nested `mk.md` calls compose under f-string
+  interpolation.
+- Arithmetic and method calls work inside `{...}` (e.g. `{F_st/1000:.2f}`,
+  `{obj.method().attr}`) — `mk.md` evaluates the placeholder text as a
+  Python expression in the caller's scope.
+- Standard Python format specs honored (`{x:.2f}`, `{x:>10}`).
+- Variables can also be passed as keyword arguments; kwargs override the
+  caller-frame lookup.
+
+### Changed
+- New hard dependency: `tabulate>=0.9` (used by the table-rendering paths
+  for ndarray, `list[list]`, `list[dict]`, and DataFrames).
+
 ## [0.6.2] - 2026-05-03
 
 ### Added

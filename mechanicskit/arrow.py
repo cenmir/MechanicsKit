@@ -53,8 +53,8 @@ def _is_list_of_vectors(obj):
 
 
 def arrow(*args, start=None, direction=None, end=None, scale=1.0, ax=None,
-          color='black', label=None, linewidth=2, mutation_scale=15,
-          zorder=5, **kwargs):
+          color='black', label=None, linewidth=2, head_scale=None,
+          mutation_scale=15, zorder=5, **kwargs):
     """
     Draw 2D arrows in data coordinates.
 
@@ -91,8 +91,13 @@ def arrow(*args, start=None, direction=None, end=None, scale=1.0, ax=None,
         Legend label(s).
     linewidth : float, optional
         Shaft width. Default 2.
+    head_scale : float, optional
+        Arrowhead size in points. Bigger value = bigger head. Default 15.
+        Preferred name; ``mutation_scale`` is kept as a backwards-compatible
+        alias for the underlying matplotlib parameter.
     mutation_scale : float, optional
-        Arrowhead size. Default 15.
+        Alias for ``head_scale`` (matplotlib's name for the same thing).
+        Used only when ``head_scale`` is not given.
     zorder : int, optional
         Drawing order. Default 5.
     **kwargs
@@ -102,6 +107,9 @@ def arrow(*args, start=None, direction=None, end=None, scale=1.0, ax=None,
     -------
     FancyArrowPatch or list of FancyArrowPatch
     """
+    # head_scale takes precedence; falls back to mutation_scale for back-compat.
+    if head_scale is not None:
+        mutation_scale = head_scale
     # Parse positional arguments
     if len(args) == 2:
         a, b = args
