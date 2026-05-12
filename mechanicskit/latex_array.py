@@ -1,6 +1,94 @@
 import numpy as np
 from IPython.display import display, Latex
 
+
+def _resolve_wrap(wrap):
+    """Normalize the user-facing ``wrap`` argument.
+
+    ``None``/``False`` -> wrapping disabled.
+    ``True``           -> one summand per line.
+    Integer ``N``      -> ``N`` summands per line (must be >= 1).
+    """
+    if wrap is None or wrap is False:
+        return None
+    if wrap is True:
+        return 1
+    n = int(wrap)
+    if n < 1:
+        raise ValueError("wrap must be True or a positive integer")
+    return n
+
+
+def _split_add_for_wrap(expr, n_per_line, has_lhs):
+    """Render a SymPy ``Add`` as multi-line aligned summands.
+
+    Returns the inner LaTeX (lines joined with ``\\\\``), to be placed
+    inside ``\\begin{aligned} ... \\end{aligned}``. The first line carries
+    no continuation marker; subsequent lines start with ``&\\quad`` so they
+    align under the first chunk's leading column. Returns ``None`` when
+    ``expr`` is not an ``Add`` or has at most ``n_per_line`` summands.
+    """
+    try:
+        import sympy as sp
+        from sympy import latex as sympy_latex
+    except ImportError:
+        return None
+
+    if not isinstance(expr, sp.Add):
+        return None
+    args = list(expr.args)
+    if len(args) <= n_per_line:
+        return None
+
+    def render(term, is_first):
+        s = sympy_latex(term).replace(r'\frac', r'\dfrac')
+        if is_first:
+            return s
+        if s.lstrip().startswith('-'):
+            return s
+        return '+ ' + s
+
+    rendered = [render(t, i == 0) for i, t in enumerate(args)]
+    chunks = [' '.join(rendered[i:i + n_per_line])
+              for i in range(0, len(rendered), n_per_line)]
+
+    lines = []
+    if has_lhs:
+        lines.append(chunks[0])
+        for c in chunks[1:]:
+            lines.append('&\\quad ' + c)
+    else:
+        lines.append('& ' + chunks[0])
+        for c in chunks[1:]:
+            lines.append('&\\quad ' + c)
+    return ' \\\\\n'.join(lines)
+
+
+def _wrap_sympy_inner(obj, n_per_line, external_lhs=False):
+    """Return the inner aligned LaTeX for ``obj`` when wrapping applies.
+
+    Handles bare expressions and ``Eq`` instances whose RHS is an ``Add``.
+    Returns ``None`` if no wrapping is needed.
+
+    When ``external_lhs`` is True (used by ``ltx``), the caller has already
+    provided a left-hand side and alignment ``&``, so the first chunk is
+    emitted without a leading ``&``.
+    """
+    try:
+        import sympy as sp
+    except ImportError:
+        return None
+
+    if isinstance(obj, sp.Equality):
+        from sympy import latex as sympy_latex
+        rhs_split = _split_add_for_wrap(obj.rhs, n_per_line, has_lhs=True)
+        if rhs_split is None:
+            return None
+        lhs_latex = sympy_latex(obj.lhs).replace(r'\frac', r'\dfrac')
+        return lhs_latex + ' &= ' + rhs_split
+    return _split_add_for_wrap(obj, n_per_line, has_lhs=external_lhs)
+
+
 class LatexArray:
     """
     Wraps a NumPy array to provide a rich LaTeX display in marimo
@@ -16,13 +104,14 @@ class LatexArray:
         np.arange(10) | la
     """
 
-    def __init__(self, array, arraystretch=1.0, alignedstretch=2.5, evalf=None, simplify=False, trigsimp=False, show_shape=False):
+    def __init__(self, array, arraystretch=1.0, alignedstretch=2.5, evalf=None, simplify=False, trigsimp=False, show_shape=False, wrap=None):
         self._arraystretch = arraystretch
         self.alignedstretch = alignedstretch
         self.evalf = evalf
         self.simplify = simplify
         self.trigsimp = trigsimp
         self.show_shape = show_shape
+        self.wrap = _resolve_wrap(wrap)
         self._is_dict = isinstance(array, dict)
         # Detect SymPy objects and pass them through directly
         self._is_sympy = hasattr(array, '__module__') and array.__module__ and 'sympy' in array.__module__
@@ -62,6 +151,11 @@ class LatexArray:
                     pass
             if self.evalf is not None and hasattr(obj, 'evalf'):
                 obj = obj.evalf(self.evalf)
+            if self.wrap is not None:
+                wrapped = _wrap_sympy_inner(obj, self.wrap)
+                if wrapped is not None:
+                    aligned_block = "\\begin{aligned}\n" + wrapped + "\n\\end{aligned}"
+                    return self._wrap_stretch(aligned_block)
             s = sympy_latex(obj).replace(r'\frac', r'\dfrac')
             if self.show_shape and hasattr(obj, 'shape'):
                 rows, cols = obj.shape
@@ -215,23 +309,27 @@ class LatexRenderer:
         simplify : bool         Apply sp.simplify (default: False)
         trigsimp : bool         Apply sp.trigsimp (default: False)
         show_shape : bool       Show m x n subscript (default: False)
+        wrap : bool or int      Break a long top-level SymPy ``Add`` across
+                                aligned lines: ``True`` = one summand per line,
+                                ``N`` = pack N summands per line. (default: None)
 
     Chainable methods:
         .evalf(n)          .simplify()        .trigsimp()
-        .arraystretch(n)   .shape()
+        .arraystretch(n)   .shape()           .wrap(n=True)
 
     Supports: NumPy arrays, SymPy Matrix/Eq/expressions, dicts (as aligned equations)
     """
     # High priority to override NumPy's element-wise operations
     __array_priority__ = 1000
 
-    def __init__(self, arraystretch=1.0, alignedstretch=2.5, evalf_n=None, simplify_flag=False, trigsimp_flag=False, show_shape=False):
+    def __init__(self, arraystretch=1.0, alignedstretch=2.5, evalf_n=None, simplify_flag=False, trigsimp_flag=False, show_shape=False, wrap_n=None):
         self._arraystretch = arraystretch
         self.alignedstretch = alignedstretch
         self._evalf_n = evalf_n
         self._simplify = simplify_flag
         self._trigsimp = trigsimp_flag
         self._show_shape = show_shape
+        self._wrap_n = _resolve_wrap(wrap_n)
 
     def _new(self, **overrides):
         """Return a new renderer with overridden config."""
@@ -242,6 +340,7 @@ class LatexRenderer:
             simplify_flag=self._simplify,
             trigsimp_flag=self._trigsimp,
             show_shape=self._show_shape,
+            wrap_n=self._wrap_n,
         )
         kwargs.update(overrides)
         return LatexRenderer(**kwargs)
@@ -255,9 +354,10 @@ class LatexRenderer:
             simplify=self._simplify,
             trigsimp=self._trigsimp,
             show_shape=self._show_shape,
+            wrap=self._wrap_n,
         )
 
-    def __call__(self, array=None, *, arraystretch=None, alignedstretch=None, evalf=None, simplify=None, trigsimp=None, show_shape=None):
+    def __call__(self, array=None, *, arraystretch=None, alignedstretch=None, evalf=None, simplify=None, trigsimp=None, show_shape=None, wrap=None):
         """
         Called when used as a function.
 
@@ -276,6 +376,7 @@ class LatexRenderer:
         if simplify is not None: overrides['simplify_flag'] = simplify
         if trigsimp is not None: overrides['trigsimp_flag'] = trigsimp
         if show_shape is not None: overrides['show_shape'] = show_shape
+        if wrap is not None: overrides['wrap_n'] = wrap
         if array is None:
             return self._new(**overrides)
         return self._new(**overrides)._wrap(array)
@@ -318,6 +419,17 @@ class LatexRenderer:
         Usage: ``A | la.shape()``
         """
         return self._new(show_shape=True)
+
+    def wrap(self, n=True):
+        """Return a configured renderer that breaks long ``Add`` expressions
+        across multiple aligned lines.
+
+        ``n=True`` (default) puts one summand per line. An integer ``n``
+        packs that many summands per line.
+
+        Usage: ``f | la.wrap()`` or ``f | la.wrap(2)``
+        """
+        return self._new(wrap_n=n)
 
 
 # Create the singleton instance that users will import
@@ -516,7 +628,7 @@ class LatexExpression:
         latex_expression("A=", A, ",\\ B=", B, precision=4)
     """
 
-    def __init__(self, *args, precision=None, arraystretch=None, show_shape=False, aligned=False):
+    def __init__(self, *args, precision=None, arraystretch=None, show_shape=False, aligned=False, wrap=None):
         """
         Parameters
         ----------
@@ -540,7 +652,10 @@ class LatexExpression:
         self.precision = precision
         self._arraystretch = arraystretch
         self._show_shape = show_shape
-        self._aligned = aligned
+        self._wrap = _resolve_wrap(wrap)
+        # ``wrap`` implies aligned because the broken summands need an
+        # ``aligned`` environment to render correctly.
+        self._aligned = aligned or self._wrap is not None
 
     def _format_val(self, v):
         """Format a single value for LaTeX."""
@@ -550,6 +665,10 @@ class LatexExpression:
                 from sympy import latex as sympy_latex
                 if self.precision is not None:
                     v = v.evalf(self.precision)
+                if self._wrap is not None:
+                    wrapped = _wrap_sympy_inner(v, self._wrap, external_lhs=True)
+                    if wrapped is not None:
+                        return wrapped
                 return sympy_latex(v).replace(r'\frac', r'\dfrac')
         except (AttributeError, ImportError):
             pass
@@ -574,6 +693,10 @@ class LatexExpression:
                 from sympy import latex as sympy_latex
                 if self.precision is not None and hasattr(array, 'evalf'):
                     array = array.evalf(self.precision)
+                if self._wrap is not None:
+                    wrapped = _wrap_sympy_inner(array, self._wrap, external_lhs=True)
+                    if wrapped is not None:
+                        return wrapped
                 s = sympy_latex(array).replace(r'\frac', r'\dfrac')
                 if self._show_shape and hasattr(array, 'shape'):
                     rows, cols = array.shape
@@ -677,7 +800,7 @@ class LatexExpression:
         return self._build_inner()
 
 
-def latex_expression(*args, precision=None, arraystretch=None, show_shape=False, aligned=False):
+def latex_expression(*args, precision=None, arraystretch=None, show_shape=False, aligned=False, wrap=None):
     """
     Labeled LaTeX display for matrices, vectors, and SymPy expressions.
 
@@ -708,6 +831,13 @@ def latex_expression(*args, precision=None, arraystretch=None, show_shape=False,
         Wrap output in ``\\begin{aligned}...\\end{aligned}`` for left-aligned
         multi-row equations. Use ``&`` to mark the alignment column and ``\\\\``
         to separate rows. (default: False)
+    wrap : bool or int, optional
+        Break long top-level SymPy ``Add`` expressions across multiple aligned
+        lines so they fit page width in both HTML and PDF. ``True`` puts one
+        summand per line; an integer ``N`` packs ``N`` summands per line.
+        Automatically enables ``aligned``. Short expressions are left
+        unchanged. Pair with a label like ``r"f &="`` so continuation lines
+        align after the ``=``. (default: None)
 
     Returns
     -------
@@ -730,8 +860,11 @@ def latex_expression(*args, precision=None, arraystretch=None, show_shape=False,
 
     >>> # With row spacing
     >>> ltx("A=", A, arraystretch=2.5)
+    >>>
+    >>> # Break a long SymPy sum across aligned lines (one summand per line)
+    >>> ltx(r"\\dot f &=", fdot, wrap=True)
     """
-    return LatexExpression(*args, precision=precision, arraystretch=arraystretch, show_shape=show_shape, aligned=aligned)
+    return LatexExpression(*args, precision=precision, arraystretch=arraystretch, show_shape=show_shape, aligned=aligned, wrap=wrap)
 
 
 # Short aliases

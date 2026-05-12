@@ -124,6 +124,62 @@ You can also control precision:
 ltx("A=", A, ",\\ B=", B, precision=4)
 ```
 
+#### Wrapping long expressions with `wrap`
+
+Long symbolic sums overflow the page width in both HTML and PDF. Pass
+`wrap=True` to break every top-level summand onto its own line, or
+`wrap=N` to pack `N` summands per line. The output is an `aligned`
+block, so it renders the same way under MathJax and LaTeX.
+
+```python
+import sympy as sp
+from mechanicskit import la, ltx
+
+t     = sp.symbols('t', real=True, positive=True)
+theta = sp.Function('theta')(t)
+
+f = (sp.sin(theta) * sp.cos(3*theta) * sp.tan(2*theta)
+     + sp.sec(theta)**2 * sp.sin(5*theta)
+     + sp.cos(theta/2)**3 * sp.sin(theta)**2
+     + sp.tan(theta) * sp.sec(theta) * sp.sin(2*theta)
+     + sp.sin(theta)**4 * sp.cos(theta)**3)
+fdot = sp.diff(f, t)
+
+la(fdot, wrap=True)   # one summand per line
+la(fdot, wrap=2)      # two summands per line
+
+# Pipe forms also work:
+fdot | la.wrap()      # same as wrap=True
+fdot | la(wrap=2)     # same as wrap=2
+```
+
+When the input is `sp.Eq(lhs, rhs)`, the LHS is kept on the first line
+and continuation lines align after the `=`:
+
+```python
+la(sp.Eq(sp.Derivative(sp.Function('f')(t), t), fdot), wrap=2)
+```
+
+```math
+\begin{aligned}
+\dfrac{d}{dt} f(t) &= -3\sin^{5}\theta\cos^{2}\theta\,\dot\theta + 4\sin^{3}\theta\cos^{4}\theta\,\dot\theta \\
+&\quad + 5\cos(5\theta)\sec^{2}\theta\,\dot\theta + \cdots
+\end{aligned}
+```
+
+`ltx` accepts the same option. The caller supplies the alignment
+column with `&=`, and `wrap` appends continuation lines as `&\quad +`:
+
+```python
+ltx(r"\dot f &=", fdot, wrap=True)
+```
+
+Short expressions are left untouched even when `wrap` is on, so opting
+in is always safe.
+
+
+
+
 
 
 ### Markdown with type-aware interpolation: `mk.md`
@@ -311,6 +367,9 @@ plt.show()
 
 
 ## Update History
+
+**May 2026 (v0.7.1)**
+- Added `wrap=True` / `wrap=N` option on `la` and `ltx` that breaks long SymPy `Add` expressions across `\begin{aligned}` lines so they fit page width in both HTML (MathJax) and PDF (LaTeX). `wrap=True` puts one summand per line, `wrap=N` packs `N` summands per line. `Eq(lhs, rhs)` keeps the LHS on the first line and aligns continuation lines after the `=`. Pipe forms `expr | la(wrap=True)` and `expr | la.wrap(N)` are also supported.
 
 **April 2026 (v0.7.0)**
 - Added `mk.md(template)` — type-aware markdown formatter that interpolates from the caller's namespace and dispatches on value type (`LatexArray` / `ltx` → LaTeX; ndarray ≤8×8 / `DataFrame` / `list[dict]` / `list[list]` → markdown table; ndarray >8×8 → truncated `bmatrix`; scalars honor format specs). Output is markdown source (renders in marimo, Jupyter, and quarto). Arithmetic and method calls work inside `{...}` without needing the `f` prefix.

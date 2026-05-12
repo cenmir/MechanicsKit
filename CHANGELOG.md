@@ -33,6 +33,22 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.7.1] - 2026-05-12
+
+### Added
+- **`wrap` option on `la` / `ltx`.** Breaks long SymPy `Add` expressions
+  across multiple aligned lines so they fit within page width in both
+  HTML (MathJax) and PDF (LaTeX).
+  - `la(expr, wrap=True)` — one summand per line.
+  - `la(expr, wrap=N)` — pack `N` summands per line.
+  - Pipe form: `expr | la.wrap()` or `expr | la.wrap(N)`.
+  - `ltx(r"f &=", expr, wrap=True)` honors the user-supplied label and
+    appends continuation lines as `&\quad + ...`.
+  - For `sp.Eq(lhs, rhs)`, the RHS is broken and continuation lines align
+    after the `=` sign.
+  - Short expressions whose number of summands does not exceed the
+    per-line count are left untouched, so opting in is safe.
+
 ## [0.7.0] - 2026-04-26
 
 ### Added

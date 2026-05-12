@@ -387,5 +387,63 @@ class TestAliases:
         assert ltx is latex_expression
 
 
+class TestWrap:
+    """Test the ``wrap`` option that breaks long Add expressions over lines."""
+
+    def _make_long_add(self):
+        import sympy as sp
+        x = sp.symbols('x', real=True)
+        return sp.sin(x) + sp.cos(2*x) + sp.tan(x) + sp.sin(3*x) + sp.cos(5*x)
+
+    def test_wrap_true_one_per_line(self):
+        f = self._make_long_add()
+        s = la(f, wrap=True)._repr_latex_()
+        # Five summands, wrap=True (one per line) -> four \\ separators.
+        assert s.count(r"\\") == 4
+        assert r"\begin{aligned}" in s
+        assert r"\end{aligned}" in s
+        assert r"&\quad" in s
+
+    def test_wrap_n_packs_terms(self):
+        f = self._make_long_add()
+        s = la(f, wrap=2)._repr_latex_()
+        # Five summands packed 2/line -> 3 chunks -> two \\ separators.
+        assert s.count(r"\\") == 2
+
+    def test_wrap_short_expr_no_break(self):
+        import sympy as sp
+        x = sp.symbols('x', real=True)
+        # Only two summands; wrap=3 should leave it on a single line.
+        s = la(sp.sin(x) + sp.cos(x), wrap=3)._repr_latex_()
+        assert r"\begin{aligned}" not in s
+
+    def test_wrap_with_equation(self):
+        import sympy as sp
+        x, y = sp.symbols('x y', real=True)
+        f = self._make_long_add()
+        s = la(sp.Eq(y, f), wrap=True)._repr_latex_()
+        # The LHS appears once before `&=`, and continuation lines use &\quad.
+        assert " &= " in s
+        assert r"&\quad" in s
+
+    def test_wrap_via_pipe(self):
+        f = self._make_long_add()
+        s_func = la(f, wrap=2)._repr_latex_()
+        s_pipe = (f | la.wrap(2))._repr_latex_()
+        assert s_func == s_pipe
+
+    def test_wrap_in_ltx_uses_external_lhs(self):
+        f = self._make_long_add()
+        s = ltx(r"f &=", f, wrap=True)._repr_latex_()
+        # ltx supplies the &= itself, so the first chunk must not start
+        # with an extra leading & — guard against the &=& regression.
+        assert "&=&" not in s
+        assert r"\begin{aligned}" in s
+
+    def test_wrap_rejects_zero(self):
+        with pytest.raises(ValueError):
+            la(self._make_long_add(), wrap=0)._repr_latex_()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
