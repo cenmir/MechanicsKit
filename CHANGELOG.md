@@ -33,6 +33,14 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.7.2] - 2026-05-12
+
+### Changed
+- Re-executed `examples/notebooks/display_labeled_latex_examples.ipynb`
+  so the rendered outputs are present in the file. The previous v0.7.0
+  commit shipped the rewritten notebook without running it, so GitHub
+  showed empty output cells.
+
 ## [0.7.1] - 2026-05-12
 
 ### Added
