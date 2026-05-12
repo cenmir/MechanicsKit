@@ -33,6 +33,25 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.7.3] - 2026-05-12
+
+### Changed
+- **`display_labeled_latex_examples.ipynb` rewritten and fixed for
+  portable MathJax rendering.** Previous outputs (shipped in v0.7.2)
+  rendered as raw LaTeX on GitHub because:
+  - Single-row labels used `&=`, which is only valid inside an
+    `aligned` environment. Replaced with plain `=`; `&=` is now used
+    only in the `aligned=True` example.
+  - The "chainable verbs" example piped twice (`A | la.foo() | la.bar()`),
+    which re-wraps a `LatexArray` and falls through to `str()`. Replaced
+    with `A | la.arraystretch(2.0).shape()` — chain on the renderer.
+  - The `aligned=True` example used `\bm`, which is not loaded by
+    MathJax in many viewers (including GitHub). Replaced with
+    `\boldsymbol`.
+- Added a new section demonstrating the `wrap=True` / `wrap=N` option
+  introduced in 0.7.1, mirroring the demo notebook at
+  `mechanics/test.ipynb`.
+
 ## [0.7.2] - 2026-05-12
 
 ### Changed
