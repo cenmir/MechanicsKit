@@ -33,6 +33,25 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.7.4] - 2026-05-16
+
+### Added
+- **`label` option on `la` / `ltx` / `labeled`.** Attaches a Quarto
+  cross-reference label to a rendered equation so prose can refer to
+  it with `@label`. Implementation: when `label="eq-step"` is set,
+  `LatexExpression._repr_markdown_` returns
+  `$$ ... $$ {#eq-step}` (instead of `None`), and Quarto picks up the
+  `text/markdown` representation over `text/latex`. With no `label`
+  argument, `_repr_markdown_` returns `None` and Jupyter / Marimo /
+  Quarto fall back to the existing `_repr_latex_` bare `$$ ... $$`
+  form, so the change is opt-in and does not affect unlabelled cells.
+  Usage:
+  ```python
+  ltx(r"y(t) =", y_sol, label="eq-step-symbolic")
+  ```
+  Prose can then write `@eq-step-symbolic` to cross-reference the
+  rendered equation by its auto-assigned Quarto number.
+
 ## [0.7.3] - 2026-05-12
 
 ### Changed

@@ -628,7 +628,7 @@ class LatexExpression:
         latex_expression("A=", A, ",\\ B=", B, precision=4)
     """
 
-    def __init__(self, *args, precision=None, arraystretch=None, show_shape=False, aligned=False, wrap=None):
+    def __init__(self, *args, precision=None, arraystretch=None, show_shape=False, aligned=False, wrap=None, label=None):
         """
         Parameters
         ----------
@@ -647,6 +647,13 @@ class LatexExpression:
             Wrap the composed expression in ``\\begin{aligned} ... \\end{aligned}``
             for left-aligned multi-row equations. Rows are separated by ``\\\\``
             and aligned on ``&`` as usual. (default: False)
+        label : str, optional
+            Quarto cross-reference label for the rendered equation (without
+            the leading ``#``). When set, the cell output is emitted in
+            markdown mode as ``$$ ... $$ {#label}`` so prose can refer to
+            the equation with ``@label``. When unset (the default), the
+            output is the bare ``$$ ... $$`` LaTeX form that Jupyter
+            renders inline. Typical use: ``label="eq-step-symbolic"``.
         """
         self.args = args
         self.precision = precision
@@ -656,6 +663,7 @@ class LatexExpression:
         # ``wrap`` implies aligned because the broken summands need an
         # ``aligned`` environment to render correctly.
         self._aligned = aligned or self._wrap is not None
+        self._label = label
 
     def _format_val(self, v):
         """Format a single value for LaTeX."""
@@ -795,12 +803,29 @@ class LatexExpression:
         """
         return f"$$ {self._build_inner()} $$"
 
+    def _repr_markdown_(self):
+        """
+        Return markdown representation with a Quarto cross-reference label.
+
+        Quarto prefers ``text/markdown`` over ``text/latex`` when both are
+        present in a cell's output mimebundle. By returning the labelled
+        ``$$ ... $$ {#label}`` form here, the rendered PDF gets an
+        auto-numbered, cross-referenceable equation that prose can point
+        at with ``@label``.
+
+        Returns ``None`` when no label is set so Jupyter, Marimo and
+        Quarto all fall back to ``_repr_latex_`` for the unlabelled case.
+        """
+        if self._label is None:
+            return None
+        return f"$$ {self._build_inner()} $$ {{#{self._label}}}"
+
     def __str__(self):
         """Return the raw LaTeX string (without $$ delimiters)."""
         return self._build_inner()
 
 
-def latex_expression(*args, precision=None, arraystretch=None, show_shape=False, aligned=False, wrap=None):
+def latex_expression(*args, precision=None, arraystretch=None, show_shape=False, aligned=False, wrap=None, label=None):
     """
     Labeled LaTeX display for matrices, vectors, and SymPy expressions.
 
@@ -814,6 +839,7 @@ def latex_expression(*args, precision=None, arraystretch=None, show_shape=False,
         ltx(r"\\dot{\\bm r} =", M, arraystretch=2.5)  # row spacing
         ltx(r"K =", K, show_shape=True)          # show m x n subscript
         ltx(r"x(t) &=", x_sol, r"\\\\ y(t) &=", y, aligned=True)  # left-aligned rows
+        ltx(r"y(t) =", y_sol, label="eq-step")  # cross-referenceable in Quarto
 
     Parameters
     ----------
@@ -838,6 +864,12 @@ def latex_expression(*args, precision=None, arraystretch=None, show_shape=False,
         Automatically enables ``aligned``. Short expressions are left
         unchanged. Pair with a label like ``r"f &="`` so continuation lines
         align after the ``=``. (default: None)
+    label : str, optional
+        Quarto cross-reference label for the rendered equation (without the
+        leading ``#``). When set, the cell output is emitted in markdown
+        mode as ``$$ ... $$ {#label}`` so prose can refer to the equation
+        with ``@label``. When unset, the output is the bare ``$$ ... $$``
+        LaTeX form that Jupyter renders inline. (default: None)
 
     Returns
     -------
@@ -863,8 +895,11 @@ def latex_expression(*args, precision=None, arraystretch=None, show_shape=False,
     >>>
     >>> # Break a long SymPy sum across aligned lines (one summand per line)
     >>> ltx(r"\\dot f &=", fdot, wrap=True)
+    >>>
+    >>> # Cross-referenceable in a Quarto document
+    >>> ltx(r"y(t) =", y_sol, label="eq-step-symbolic")
     """
-    return LatexExpression(*args, precision=precision, arraystretch=arraystretch, show_shape=show_shape, aligned=aligned, wrap=wrap)
+    return LatexExpression(*args, precision=precision, arraystretch=arraystretch, show_shape=show_shape, aligned=aligned, wrap=wrap, label=label)
 
 
 # Short aliases
