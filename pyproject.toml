@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mechanicskit"
-version = "0.7.4"
+version = "0.7.5"
 authors = [
   { name="Mirza Cenanovic", email="mirza.cenanovic@gmail.com" },
 ]

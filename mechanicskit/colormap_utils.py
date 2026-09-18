@@ -7,7 +7,8 @@ without manual ScalarMappable creation.
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
+import matplotlib.cm as cm          # ScalarMappable
+from matplotlib import colormaps
 from matplotlib.colors import Normalize, BoundaryNorm
 
 # Module-level storage for last patch state
@@ -213,7 +214,9 @@ def colorbar(cmap=None, limits=None, clims=None, ax=None, label=None,
         vmax = state.get('vmax') if state.get('vmax') is not None else cdata.max()
 
     # Get colormap object
-    cmap_obj = cm.get_cmap(cmap_to_use)
+    # matplotlib.cm.get_cmap was removed in 3.9; colormaps exists from 3.6.
+    cmap_obj = (colormaps[cmap_to_use] if isinstance(cmap_to_use, str)
+                else cmap_to_use)
 
     # Determine if we should use discrete or continuous colorbar
     # Discrete: flat colors (per-element/per-face data)

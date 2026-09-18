@@ -33,6 +33,21 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.7.5] - 2026-09-18
+
+### Fixed
+- **Import failure on matplotlib 3.9 and later.** `matplotlib.cm.get_cmap`
+  was removed in 3.9, and `patch.py` imported it at module level, so
+  `import mechanicskit` raised `ImportError` — the whole package was
+  unusable, not just `patch()`. `patch.py` now looks colormaps up through
+  `matplotlib.colormaps` (available since 3.6) behind a small `get_cmap`
+  helper that still passes a `Colormap` object through unchanged, and
+  `colormap_utils.build_colorbar` does the same. Seen on matplotlib
+  3.11.2 with Python 3.14.
+
+  The test suite could not be collected before this fix, since every test
+  module imports the package.
+
 ## [0.7.4] - 2026-05-16
 
 ### Added

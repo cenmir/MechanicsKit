@@ -12,7 +12,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection, PolyCollection
 from matplotlib.colors import Normalize
-from matplotlib.cm import get_cmap
+from matplotlib import colormaps
+
+
+def get_cmap(cmap):
+    """Look up a colormap by name.
+
+    matplotlib.cm.get_cmap was removed in matplotlib 3.9; matplotlib.colormaps
+    is the replacement and exists from 3.6. A Colormap that is already an
+    object is passed through, which is what the old function did too.
+    """
+    return colormaps[cmap] if isinstance(cmap, str) else cmap
+
+
 from mpl_toolkits.mplot3d.art3d import Line3DCollection, Poly3DCollection
 
 from . import colormap_utils
