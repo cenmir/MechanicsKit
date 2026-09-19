@@ -379,8 +379,8 @@ class TestAliases:
     """Test that aliases work correctly."""
 
     def test_labeled_alias(self):
-        """Test that labeled is an alias for display_labeled_latex."""
-        assert labeled is display_labeled_latex
+        """Test that labeled is an alias for latex_expression (since v0.6.1)."""
+        assert labeled is latex_expression
 
     def test_ltx_alias(self):
         """Test that ltx is an alias for latex_expression."""

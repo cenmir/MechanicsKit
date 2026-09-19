@@ -196,15 +196,25 @@ class TestFplotParameterInference:
 
     def test_prefer_t_for_parametric(self):
         """Test that 't' is preferred for parametric plots."""
+        from mechanicskit.fplot import _infer_parameter_from_multiple
         t, a = sp.symbols('t a')
         xt = a * sp.cos(t)
         yt = a * sp.sin(t)
 
-        # Should infer t as the parameter
-        fig, ax = plt.subplots()
-        line = fplot(xt, yt, ax=ax)
+        assert _infer_parameter_from_multiple(xt, yt) == t
 
+        # With a value for a, the curve plots against t
+        fig, ax = plt.subplots()
+        line = fplot(xt.subs(a, 2), yt.subs(a, 2), ax=ax)
         assert line is not None
+        plt.close(fig)
+
+    def test_parametric_leftover_symbol(self):
+        """A symbol other than the parameter without a value is named in the error."""
+        t, a = sp.symbols('t a')
+        with pytest.raises(ValueError, match="a has no value"):
+            fig, ax = plt.subplots()
+            fplot(a * sp.cos(t), a * sp.sin(t), ax=ax)
         plt.close(fig)
 
     def test_no_free_symbols(self):
@@ -228,7 +238,8 @@ class TestFplotEdgeCases:
     def test_complex_result_warning(self):
         """Test that complex results produce warning and plot real part."""
         x = sp.Symbol('x')
-        expr = sp.sqrt(x)  # Negative x gives complex results
+        # sqrt(x) would not do: numpy returns nan for negative floats, not a complex
+        expr = sp.exp(sp.I * x)
 
         fig, ax = plt.subplots()
         with pytest.warns(UserWarning, match="complex values"):

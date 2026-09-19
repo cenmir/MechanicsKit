@@ -33,6 +33,59 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.7.6] - 2026-09-19
+
+### Added
+- **`OneArray` now indexes in two dimensions**, so a global stiffness matrix
+  can be assembled in the notation the mathematics uses:
+
+  ```python
+  K = OneArray(np.zeros((3, 3)))
+  for e, (i, j) in enumerate(elements, start=1):
+      K[[i, j], [i, j]] += k[e] * k_rod     # node numbers, not node numbers minus one
+  ```
+
+  A tuple of index lists means the **submatrix** of those rows and columns,
+  as `K([i,j],[i,j])` does in a textbook and in MATLAB. This deliberately
+  differs from NumPy, where `A[[1,2],[1,2]]` picks elements pairwise; the
+  submatrix reading is the one the assembly formula intends. Scalars, index
+  lists and a bare `:` may be mixed, so `K[2, 3]`, `K[2, :]` and
+  `K[[1,2], [1,2]]` all work.
+- **`__matmul__`**, so `f = K @ u` works directly on 1-based arrays instead of
+  forcing a detour through `.data`. A dot product `u @ v` returns a plain
+  number.
+- Slices other than `:` now raise an `IndexError` naming the problem, because
+  a 1-based slice is ambiguous about whether its end point is included.
+  Previously they raised a confusing `TypeError` from the index validator.
+
+### Fixed
+- **Iterating a `OneArray` silently produced nothing.** With no `__iter__`,
+  Python fell back to the legacy sequence protocol, which calls
+  `__getitem__(0)`; a 1-based array rejects index 0 with `IndexError`, and
+  Python reads that as "the sequence ended". So `list(OneArray([1, 2, 3]))`
+  returned `[]` and every `for row in one_array:` loop was a silent no-op.
+  `__iter__` now yields the values, so
+  `for e, (i, j) in enumerate(elements, start=1)` reads element numbers and
+  node numbers alike in 1-based form.
+- `np.asarray(one_array)` returned an empty array for the same reason; it now
+  returns the values.
+- **`fplot` with a symbol left unassigned** (`fplot(a*x**2)`) picked `x` as the
+  parameter and then failed inside matplotlib with "Cannot convert expression
+  to float". It now raises a `ValueError` that names the symbol without a
+  value. Two tests in `test_fplot.py` that expected impossible behaviour were
+  corrected, and `test_labeled_alias` now checks the `labeled = ltx` alias
+  that has been in place since 0.6.1.
+
+### Changed
+- **`K[i, j]` on a two-dimensional `OneArray` now returns the element.**
+  Before, the pair was read as a list of row numbers, so `K[2, 1]` silently
+  returned rows 2 and 1. Code that relied on that should write `K[[2, 1]]`.
+
+### Unchanged
+- One-dimensional behaviour is exactly as before, and a single index still
+  applies to the first axis, so a nodal field of shape `(n_nodes, n_comp)`
+  still answers `U[2]` with node 2's row.
+
 ## [0.7.5] - 2026-09-18
 
 ### Fixed

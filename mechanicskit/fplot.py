@@ -284,6 +284,8 @@ def _fplot_2d(args, plot_range, ax, npoints, **kwargs):
             f"Too many arguments for 2D plot: expected 1-2, got {len(args)}"
         )
 
+    _require_only(param, expr)
+
     # Convert to numerical function
     num_func = sp.lambdify(param, expr, 'numpy')
 
@@ -348,6 +350,8 @@ def _fplot_parametric(args, plot_range, ax, npoints, **kwargs):
         )
 
     # Convert to numerical functions
+    _require_only(param, xt, yt)
+
     num_func_x = sp.lambdify(param, xt, 'numpy')
     num_func_y = sp.lambdify(param, yt, 'numpy')
 
@@ -368,6 +372,23 @@ def _fplot_parametric(args, plot_range, ax, npoints, **kwargs):
     line = ax.plot(x_vals, y_vals, **kwargs)
 
     return line[0]
+
+
+def _require_only(param, *exprs):
+    """
+    Raise a readable error when an expression holds symbols besides the parameter.
+
+    Without this, lambdify returns SymPy objects for the leftover symbols and
+    matplotlib fails later with "Cannot convert expression to float".
+    """
+    others = set().union(*(e.free_symbols for e in exprs)) - {param}
+    if others:
+        names = ", ".join(sorted(str(s) for s in others))
+        raise ValueError(
+            f"Cannot plot against {param}: the expression has multiple free symbols, "
+            f"and {names} has no value. Substitute one first, for example "
+            f"expr.subs({sorted(others, key=str)[0]}, 2)."
+        )
 
 
 def _infer_parameter(expr):

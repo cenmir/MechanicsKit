@@ -122,14 +122,7 @@ class OneArray:
         >>> N[[1, 3]]
         array([10, 30])
         """
-        if np.isscalar(index):
-            self._validate_index(index)
-            return self.data[index - 1]  # THE TRANSLATION
-        else:
-            indices = np.atleast_1d(index)
-            for idx in indices:
-                self._validate_index(idx)
-            return self.data[indices - 1]  # Vectorized translation
+        return self.data[self._resolve(index)]  # THE TRANSLATION
 
     def __setitem__(self, index: Union[int, List[int], np.ndarray], value):
         """
@@ -152,18 +145,27 @@ class OneArray:
         >>> N.data
         array([100, 20, 300])
         """
-        if np.isscalar(index):
-            self._validate_index(index)
-            self.data[index - 1] = value
-        else:
-            indices = np.atleast_1d(index)
-            for idx in indices:
-                self._validate_index(idx)
-            self.data[indices - 1] = value
+        self.data[self._resolve(index)] = value
 
     def __len__(self) -> int:
         """Return number of elements/nodes."""
         return len(self.data)
+
+    def __iter__(self):
+        """
+        Iterate over the values.
+
+        Without this, Python falls back to calling ``__getitem__(0)``, which a
+        1-based array rejects, and the loop silently ends before it starts.
+
+        Examples
+        --------
+        >>> for i, j in OneArray([[1, 2], [2, 3]]):
+        ...     print(i, j)
+        1 2
+        2 3
+        """
+        return iter(self.data)
 
     def __repr__(self) -> str:
         """String representation."""
@@ -176,13 +178,59 @@ class OneArray:
         else:
             return f"OneArray([{self.data[0]}, {self.data[1]}, ..., {self.data[-1]}])"
 
-    def _validate_index(self, index: int):
+    def _resolve(self, index):
+        """
+        Translate a 1-based index expression into a 0-based NumPy one.
+
+        A tuple of index lists means the *submatrix* of those rows and columns,
+        as ``K([i,j],[i,j])`` does in mathematical notation and in MATLAB. This
+        deliberately differs from NumPy, where ``A[[1,2],[1,2]]`` picks out
+        elements pairwise instead.
+        """
+        if isinstance(index, tuple):
+            if len(index) != self.data.ndim:
+                raise IndexError(
+                    f"Got {len(index)} indices for a {self.data.ndim}-dimensional "
+                    f"OneArray of shape {self.data.shape}."
+                )
+            parts = [self._resolve_axis(ix, ax) for ax, ix in enumerate(index)]
+            if all(isinstance(p, np.ndarray) for p in parts):
+                return np.ix_(*parts)          # the submatrix, not the diagonal
+            return tuple(parts)
+
+        # A single index always applies to the first axis, so a nodal field of
+        # shape (n_nodes, n_components) still answers U[2] with node 2's row.
+        return self._resolve_axis(index, 0)
+
+    def _resolve_axis(self, index, axis: int):
+        """Translate the 1-based index for one axis."""
+        if isinstance(index, slice):
+            if index == slice(None):
+                return slice(None)
+            raise IndexError(
+                "OneArray does not support slices, because a 1-based slice is "
+                "ambiguous about its end point. List the indices instead, for "
+                "example K[[1, 2], [1, 2]]."
+            )
+        length = self.data.shape[axis]
+        if np.isscalar(index):
+            self._validate_index(index, length, axis)
+            return index - 1
+        indices = np.atleast_1d(np.asarray(index))
+        for idx in indices:
+            self._validate_index(idx, length, axis)
+        return indices - 1
+
+    def _validate_index(self, index, length: int = None, axis: int = None):
         """Validate that index is in valid 1-based range."""
+        if length is None:
+            length = len(self.data)
         if not isinstance(index, (int, np.integer)):
             raise TypeError(f"Index must be integer, got {type(index)}")
-        if not (1 <= index <= len(self.data)):
+        if not (1 <= index <= length):
+            where = "" if axis is None or self.data.ndim == 1 else f" on axis {axis}"
             raise IndexError(
-                f"Index {index} out of range [1, {len(self.data)}]. "
+                f"Index {index} out of range [1, {length}]{where}. "
                 f"Remember: OneArray uses 1-based indexing!"
             )
 
@@ -210,6 +258,21 @@ class OneArray:
         if isinstance(other, OneArray):
             return OneArray(self.data / other.data)
         return OneArray(self.data / other)
+
+    def __matmul__(self, other):
+        """Matrix product, so ``f = K @ u`` works on 1-based arrays."""
+        if isinstance(other, OneArray):
+            other = other.data
+        return self._wrap_product(self.data @ other)
+
+    def __rmatmul__(self, other):
+        """Matrix product with the OneArray on the right."""
+        return self._wrap_product(other @ self.data)
+
+    @staticmethod
+    def _wrap_product(result):
+        """A dot product ``u @ v`` is a number, not a one-element array."""
+        return result if np.ndim(result) == 0 else OneArray(result)
 
     def __neg__(self):
         """Negate."""
