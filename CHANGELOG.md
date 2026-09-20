@@ -53,6 +53,9 @@ decide patch vs. minor before pushing.
   still for the whole run. Returns a `FuncAnimation`, so a notebook shows it
   with `HTML(anim.to_jshtml())`, and the title reports the scale of each frame.
 
+Node discs are sized in points rather than in model units, so the number always
+fits inside its disc whatever the truss is measured in.
+
 Load arrows are placed on the outward side of the joint, so a deck load on a
 bottom chord hangs below the joint instead of crossing the truss to reach it.
 Support symbols are drawn on the deformed shape, so a joint given a prescribed

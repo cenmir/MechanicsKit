@@ -234,8 +234,10 @@ def draw_truss(nodes, elements, presc=(), loads=None, ax=None, *,
                                         edgecolor="0.35", lw=0.6))
     if node_numbers:
         for i, p in enumerate(drawn, start=1):
-            ax.add_patch(Circle(p, 0.020*ref, facecolor=NODE_FACE, edgecolor="0.25",
-                                lw=0.8, zorder=5))
+            # sized in points, like the number it holds, so the disc fits the
+            # label whatever units the model happens to be in
+            ax.plot(*p, "o", ms=1.9*fontsize + 2.0*(len(str(i)) - 1),
+                    mfc=NODE_FACE, mec="0.25", mew=0.8, zorder=5)
             ax.text(*p, str(i), ha="center", va="center", fontsize=fontsize,
                     zorder=6)
 
