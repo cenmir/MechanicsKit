@@ -42,6 +42,7 @@ from .one_array import OneArray
 from .patch import patch
 from .fplot import fplot
 from .arrow import arrow
+from .truss import draw_truss, animate_truss, pin_support, roller_support
 from .gaussint import gaussint
 from .colormap_utils import colorbar, cmap
 from .help import quick_ref
@@ -49,7 +50,7 @@ from .animation_utils import to_responsive_html
 from .markdown import md, Markdown
 
 # Version information
-__version__ = '0.7.6'
+__version__ = '0.8.0'
 
 def version():
     """
@@ -156,6 +157,7 @@ __all__ = [
     'colorbar', 'cmap',
     'version',
     'arrow',
+    'draw_truss', 'animate_truss', 'pin_support', 'roller_support',
     'quick_ref',
     'to_responsive_html',
     'md', 'Markdown',

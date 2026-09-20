@@ -33,6 +33,33 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.8.0] - 2026-09-20
+
+### Added
+
+- `draw_truss(nodes, elements, presc, loads, ...)` — draws a plane truss with
+  numbered nodes and elements, support symbols and load arrows. Everything is
+  1-based: node `i` owns degrees of freedom `2i-1` and `2i`, and `presc` is a
+  list of those numbers. A node with both degrees of freedom held is drawn as a
+  pin, a node with one held as a roller turned so its wheels run along the
+  direction still free.
+- `pin_support(ax, xy, h, angle)` and `roller_support(ax, xy, h, angle)` — the
+  symbols on their own, for anyone drawing their own figure. The geometry
+  follows FBD Lab: a rounded-top triangle with a pin hole on a base bar that
+  fades out.
+- `animate_truss(nodes, elements, displacements, ...)` — grows the deformation
+  from nothing up to `scale_max` over `frames` frames, with the undeformed
+  shape left out so the truss is seen moving on its own. The axes are held
+  still for the whole run. Returns a `FuncAnimation`, so a notebook shows it
+  with `HTML(anim.to_jshtml())`, and the title reports the scale of each frame.
+
+Load arrows are placed on the outward side of the joint, so a deck load on a
+bottom chord hangs below the joint instead of crossing the truss to reach it.
+Support symbols are drawn on the deformed shape, so a joint given a prescribed
+displacement carries its roller along with it. `display_undeformed=False` drops
+the dashed ghost, and `colorbar=False` suppresses the colourbar that goes with
+`values`.
+
 ## [0.7.6] - 2026-09-19
 
 ### Added
