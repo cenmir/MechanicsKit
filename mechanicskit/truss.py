@@ -110,8 +110,9 @@ def draw_truss(nodes, elements, presc=(), loads=None, ax=None, *,
                node_numbers=True, element_numbers=True, supports=True,
                displacements=None, scale=1.0, values=None, cmap="viridis",
                value_label=None, title=None, figsize=(9, 4.5), fontsize=8,
-               support_size=None, load_length=None, display_undeformed=True,
-               colorbar=True, bar_color=BAR, bar_lw=2.0, bar_ls="-"):
+               support_size=None, support_angles=None, load_length=None,
+               display_undeformed=True, colorbar=True, bar_color=BAR,
+               bar_lw=2.0, bar_ls="-"):
     """Draw a plane truss.
 
     Parameters
@@ -130,6 +131,11 @@ def draw_truss(nodes, elements, presc=(), loads=None, ax=None, *,
         Drawn on top of the undeformed shape, multiplied by ``scale``.
     values : (m,) array, optional
         One number per bar; colours the bars and adds a colourbar.
+    support_angles : dict, optional
+        Degrees to turn the support symbol at a given node, as
+        ``{node: angle}``. The default hangs every symbol below its node,
+        which is right for a support standing on the ground; a node held
+        against a wall on its left wants ``-90``.
     display_undeformed : bool
         Whether to leave the undeformed shape behind as a dashed ghost. Only
         has an effect when ``displacements`` is given.
@@ -145,6 +151,7 @@ def draw_truss(nodes, elements, presc=(), loads=None, ax=None, *,
     presc = getattr(presc, "data", presc)
     nnod, nele = len(nodes), len(elements)
     presc = [int(k) for k in (presc if presc is not None else [])]
+    support_angles = dict(support_angles or {})
 
     if ax is None:
         _, ax = plt.subplots(figsize=figsize)
@@ -187,12 +194,13 @@ def draw_truss(nodes, elements, presc=(), loads=None, ax=None, *,
     if supports:
         for i in range(1, nnod + 1):
             fx, fy = (2*i - 1) in presc, (2*i) in presc
+            turn = float(support_angles.get(i, 0.0))
             if fx and fy:
-                pin_support(ax, drawn[i-1], h)
+                pin_support(ax, drawn[i-1], h, angle=turn)
             elif fy:                       # held vertically, free along x
-                roller_support(ax, drawn[i-1], h)
+                roller_support(ax, drawn[i-1], h, angle=turn)
             elif fx:                       # held horizontally, free along y
-                roller_support(ax, drawn[i-1], h, angle=-90)
+                roller_support(ax, drawn[i-1], h, angle=turn - 90)
 
     # --- loads --------------------------------------------------------------
     for node, fxv, fyv in _normalise_loads(loads, nnod):

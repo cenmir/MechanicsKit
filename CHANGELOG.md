@@ -33,6 +33,15 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.8.1] - 2026-09-21
+
+### Added
+
+- `draw_truss(..., support_angles={node: degrees})` — turns the support symbol
+  at a given node. The default hangs every symbol below its node, which is
+  right for a support standing on the ground; a node pinned to a wall on its
+  left wants `-90`. The angle passes through `animate_truss` unchanged.
+
 ## [0.8.0] - 2026-09-20
 
 ### Added
