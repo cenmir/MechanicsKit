@@ -33,6 +33,19 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.9.0] - 2026-09-21
+
+### Added
+
+- `mechanicskit.sketch` — the parts a problem figure is made of, drawn in the
+  palette `draw_truss` uses so that every figure in a book looks like the
+  same hand drew it: `ground` (a fixed surface whose solid side fades away),
+  `body`, `link`, `pin`, `spring`, `gear` and `hub`, `force`, `angle`,
+  `dimension`, `axes`, `guide`, `rotation` and `label`, plus `canvas` for a
+  frameless equal-aspect axes, `gear_outline` for the bare involute
+  polygon, and `unit` and `normal` for placing labels along and beside an arrow. Every function takes `ax` first and points as `(x, y)` pairs; a
+  SymPy column vector is accepted and cut down to its first two entries.
+
 ## [0.8.1] - 2026-09-21
 
 ### Added
