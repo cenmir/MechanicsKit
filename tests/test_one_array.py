@@ -124,3 +124,28 @@ class TestMatmul:
         d = OneArray([1.0, 2.0]) @ OneArray([1.0, 2.0])
         assert not isinstance(d, OneArray)
         assert d == 5.0
+
+
+class TestPipeConstructor:
+    """``array | OneArray`` wraps the whole array, not element by element."""
+
+    def test_pipe_from_ndarray(self):
+        f = np.zeros(8) | OneArray
+        assert isinstance(f, OneArray)
+        assert f.data.shape == (8,)
+
+    def test_pipe_keeps_values_and_one_based_indexing(self):
+        u = np.array([10.0, 20.0, 30.0]) | OneArray
+        assert u[1] == 10.0
+        assert u[3] == 30.0
+
+    def test_pipe_from_list(self):
+        assert isinstance([1, 2, 3] | OneArray, OneArray)
+
+    def test_pipe_keeps_two_dimensions(self):
+        K = np.zeros((4, 4)) | OneArray
+        assert K.data.shape == (4, 4)
+
+    def test_pipe_matches_the_call(self):
+        a = np.arange(5.0)
+        assert_array_equal((a | OneArray).data, OneArray(a).data)

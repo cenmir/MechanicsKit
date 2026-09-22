@@ -31,7 +31,24 @@ import numpy as np
 from typing import Union, List
 
 
-class OneArray:
+class _OneArrayType(type):
+    """Metaclass behind ``array | OneArray``.
+
+    Writing ``f = np.zeros(ndofs) | OneArray`` reads like handing the array to
+    the wrapper, which is nicer than nesting a call inside a call. Python asks
+    the right-hand operand to handle the ``|`` only after the left-hand one
+    declines, and NumPy would otherwise broadcast the operator over every
+    element; ``__array_ufunc__ = None`` tells it to decline, so ``__ror__``
+    receives the whole array.
+    """
+
+    __array_ufunc__ = None
+
+    def __ror__(cls, data):
+        return cls(data)
+
+
+class OneArray(metaclass=_OneArrayType):
     """
     Array wrapper with 1-based indexing for FEM results.
 
@@ -70,6 +87,10 @@ class OneArray:
     >>> # Still have access to underlying NumPy array
     >>> N.data
     array([7000.0, -5582.25, -7274.51, 6380.16, -9912.07])
+    >>>
+    >>> # An array can be piped into the wrapper instead of wrapped by hand
+    >>> f = np.zeros(8) | OneArray
+    >>> f[8] = -10e3
     """
 
     def __init__(self, data):

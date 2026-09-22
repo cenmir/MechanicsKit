@@ -33,6 +33,15 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.9.1] - 2026-09-22
+
+### Added
+
+- `array | OneArray` as a second way to build a `OneArray`, so that
+  `f = np.zeros(ndofs) | OneArray` reads left to right instead of nesting a
+  call inside a call. The whole array is wrapped, not each element: NumPy is
+  told to decline the operator so that Python hands the array over intact.
+
 ## [0.9.0] - 2026-09-21
 
 ### Added

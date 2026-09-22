@@ -51,7 +51,7 @@ from .animation_utils import to_responsive_html
 from .markdown import md, Markdown
 
 # Version information
-__version__ = '0.9.0'
+__version__ = '0.9.1'
 
 def version():
     """
