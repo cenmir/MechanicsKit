@@ -33,6 +33,16 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.9.2] - 2026-09-22
+
+### Fixed
+
+- `draw_truss`: a load arrow that points into a node stops clear of the node
+  disc, whatever the size of the figure. The discs are sized in points, and
+  the old fixed clearance in data units hid the arrowhead behind the disc on
+  small figures. The arrows are now drawn once the limits are known, so the
+  clearance is read off the real transform.
+
 ## [0.9.1] - 2026-09-22
 
 ### Added

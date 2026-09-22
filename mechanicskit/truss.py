@@ -202,37 +202,6 @@ def draw_truss(nodes, elements, presc=(), loads=None, ax=None, *,
             elif fx:                       # held horizontally, free along y
                 roller_support(ax, drawn[i-1], h, angle=turn - 90)
 
-    # --- loads --------------------------------------------------------------
-    for node, fxv, fyv in _normalise_loads(loads, nnod):
-        for comp, (ux, uy) in ((fxv, (1, 0)), (fyv, (0, 1))):
-            if comp == 0:
-                continue
-            s = np.sign(comp)
-            d = np.array([ux, uy])*s
-            p = drawn[node-1]
-            gap = d*0.024*ref                     # keep clear of the node marker
-            # Put the arrow on the outward side of the node, so that it never
-            # has to cross the truss to reach the joint it loads.
-            axis = 1 if uy else 0
-            outward = np.sign(p[axis] - centroid[axis]) or -d[axis]
-            if outward == np.sign(d[axis]):       # load points away: hang it off
-                tail, tip = p + gap, p + d*arrow
-            else:                                 # load points in: come from outside
-                tip, tail = p - gap, p - gap - d*arrow
-            ax.add_patch(FancyArrow(*tail, *(tip - tail), width=0.004*ref,
-                                    head_width=0.026*ref, head_length=0.030*ref,
-                                    length_includes_head=True, color=LOAD,
-                                    zorder=4))
-            # vertical arrows label beyond the tail, horizontal ones above it
-            far = tail if np.hypot(*(tail - p)) > np.hypot(*(tip - p)) else tip
-            anchor = far if uy else (tail + tip)/2
-            off = (0, 11*np.sign(far[1] - p[1])) if uy else (0, 9)
-            ax.annotate(f"{abs(comp):g}", anchor, textcoords="offset points",
-                        xytext=off, ha="center", va="center", fontsize=fontsize,
-                        color=LOAD, zorder=7,
-                        bbox=dict(boxstyle="square,pad=0.12", facecolor="white",
-                                  edgecolor="none", alpha=0.85))
-
     # --- numbers ------------------------------------------------------------
     if element_numbers:
         for e, (i, j) in enumerate(elements, start=1):
@@ -261,6 +230,48 @@ def draw_truss(nodes, elements, presc=(), loads=None, ax=None, *,
     ax.axis("off")
     ax.autoscale_view()
     ax.margins(0.12, 0.18)
+
+    # --- loads --------------------------------------------------------------
+    # Drawn last, once the limits are known: the node discs are sized in
+    # points, and an arrow has to stop clear of the disc it points at, so
+    # the disc radius is turned into data units through the current
+    # transform. The arrows widen the limits a little more at draw time,
+    # which is what the margin on the radius is for.
+    ax.autoscale_view()
+    px = ax.transData.transform((1.0, 0.0)) - ax.transData.transform((0.0, 0.0))
+    unit_pt = np.hypot(*px) * 72 / ax.figure.dpi          # points per data unit
+    disc = 1.25 * (1.9*fontsize + 2.0) / 2 / unit_pt + 0.006*ref
+    for node, fxv, fyv in _normalise_loads(loads, nnod):
+        for comp, (ux, uy) in ((fxv, (1, 0)), (fyv, (0, 1))):
+            if comp == 0:
+                continue
+            s = np.sign(comp)
+            d = np.array([ux, uy])*s
+            p = drawn[node-1]
+            gap = d*max(0.024*ref, disc)          # keep clear of the node disc
+            # Put the arrow on the outward side of the node, so that it never
+            # has to cross the truss to reach the joint it loads.
+            axis = 1 if uy else 0
+            outward = np.sign(p[axis] - centroid[axis]) or -d[axis]
+            if outward == np.sign(d[axis]):       # load points away: hang it off
+                tail, tip = p + gap, p + d*arrow
+            else:                                 # load points in: come from outside
+                tip, tail = p - gap, p - gap - d*arrow
+            ax.add_patch(FancyArrow(*tail, *(tip - tail), width=0.004*ref,
+                                    head_width=0.026*ref, head_length=0.030*ref,
+                                    length_includes_head=True, color=LOAD,
+                                    zorder=4))
+            # vertical arrows label beyond the tail, horizontal ones above it
+            far = tail if np.hypot(*(tail - p)) > np.hypot(*(tip - p)) else tip
+            anchor = far if uy else (tail + tip)/2
+            off = (0, 11*np.sign(far[1] - p[1])) if uy else (0, 9)
+            ax.annotate(f"{abs(comp):g}", anchor, textcoords="offset points",
+                        xytext=off, ha="center", va="center", fontsize=fontsize,
+                        color=LOAD, zorder=7,
+                        bbox=dict(boxstyle="square,pad=0.12", facecolor="white",
+                                  edgecolor="none", alpha=0.85))
+    ax.autoscale_view()                       # make room for the arrows
+
     return ax
 
 
