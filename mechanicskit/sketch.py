@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import patheffects
 from matplotlib.patches import Circle, FancyArrowPatch, Polygon
 
 from .truss import BODY, GROUND, EDGE, LOAD
@@ -322,10 +323,21 @@ def rotation(ax, centre, r, a0=60, a1=120, color=GREEN, lw=1.6, zorder=5):
                                  lw=lw, shrinkA=0, shrinkB=0, zorder=zorder))
 
 
-def label(ax, xy, text, color="black", fontsize=12, zorder=7, **kwargs):
-    """Centred text with a white backing so it reads over whatever it sits on."""
-    kw = dict(ha="center", va="center", fontsize=fontsize, color=color, zorder=zorder,
-              bbox=dict(boxstyle="square,pad=0.08", facecolor="white",
-                        edgecolor="none", alpha=0.85))
+def label(ax, xy, text, color="black", fontsize=12, zorder=7, bg=None, bgalpha=0.85,
+          halo=False, **kwargs):
+    """Centred text, plain by default.
+
+    A label is best placed where it is clear of every line, and then it needs no
+    backing. One that has to sit on a line gets either ``bg``, a box of that
+    colour behind the text with opacity ``bgalpha``, or ``halo=True``, a thin
+    white outline around the glyphs that hides far less of the drawing and reads
+    over a tinted fill too. A ``bbox`` passed in ``kwargs`` overrides ``bg``.
+    """
+    kw = dict(ha="center", va="center", fontsize=fontsize, color=color, zorder=zorder)
+    if bg is not None:
+        kw["bbox"] = dict(boxstyle="square,pad=0.08", facecolor=bg, edgecolor="none",
+                          alpha=bgalpha)
+    if halo:
+        kw["path_effects"] = [patheffects.withStroke(linewidth=3, foreground="white")]
     kw.update(kwargs)
     return ax.text(*_xy(xy), text, **kw)

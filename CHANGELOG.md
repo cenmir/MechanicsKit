@@ -33,6 +33,18 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.9.3] - 2026-09-25
+
+### Changed
+
+- `sketch.label` draws plain text by default. It used to put a white box
+  behind every label, which hid lines that a better placed label would not
+  have touched. A label that has to sit on a line now asks for its backing:
+  `bg="white"` (any colour) with `bgalpha` for the box, or `halo=True` for a
+  thin white outline around the glyphs, which hides less and reads over a
+  tinted fill too. The labels that `force`, `angle`, `dimension` and `axes`
+  draw follow the same default. A `bbox` passed through still overrides both.
+
 ## [0.9.2] - 2026-09-22
 
 ### Fixed
