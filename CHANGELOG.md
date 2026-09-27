@@ -33,7 +33,7 @@ decide patch vs. minor before pushing.
 
 ---
 
-## [0.9.3] - 2026-09-25
+## [0.9.3] - Unreleased
 
 ### Changed
 
@@ -44,6 +44,15 @@ decide patch vs. minor before pushing.
   thin white outline around the glyphs, which hides less and reads over a
   tinted fill too. The labels that `force`, `angle`, `dimension` and `axes`
   draw follow the same default. A `bbox` passed through still overrides both.
+
+### Fixed
+
+- `ltx(..., precision=n)` now means n significant figures for every kind of
+  number. A plain Python float or a NumPy float used to be printed with n
+  decimal places while a SymPy number got n significant figures, so
+  `ltx(345/1.2, precision=4)` showed `287.5000` next to a SymPy result shown
+  as `4.689`. Floats are now rounded and printed exactly as SymPy prints the
+  same number, `287.5`. Without a precision, floats still show two decimals.
 
 ## [0.9.2] - 2026-09-22
 

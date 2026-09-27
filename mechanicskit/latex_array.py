@@ -637,8 +637,9 @@ class LatexExpression:
             Strings are passed through as-is.
             Arrays are converted to bmatrix format.
         precision : int, optional
-            Number of significant figures. For SymPy expressions, calls evalf(n).
-            For NumPy floats, formats to n decimal places. (default: None, full precision)
+            Number of significant figures, the same for SymPy numbers, Python
+            floats and NumPy floats. (default: None: SymPy numbers in full,
+            floats to two decimals)
         arraystretch : float, optional
             Row spacing multiplier (default: None, no override)
         show_shape : bool, optional
@@ -681,11 +682,22 @@ class LatexExpression:
         except (AttributeError, ImportError):
             pass
 
-        np_precision = self.precision if self.precision is not None else 2
+        # With a precision, a plain Python or NumPy float is rounded and printed
+        # exactly as a SymPy number would be, so precision=4 means four
+        # significant figures whatever the type of the value.
+        if self.precision is not None and isinstance(
+                v, (float, np.floating, complex, np.complexfloating)):
+            from sympy import Float, I, latex as sympy_latex
+            if isinstance(v, (complex, np.complexfloating)):
+                num = Float(float(v.real)) + I*Float(float(v.imag))
+            else:
+                num = Float(float(v))
+            return sympy_latex(num.evalf(self.precision))
+
         if isinstance(v, (np.complexfloating, complex)):
-            return f"{v.real:.{np_precision}f}{v.imag:+.{np_precision}f}j"
+            return f"{v.real:.2f}{v.imag:+.2f}j"
         elif isinstance(v, (float, np.floating)):
-            return f"{v:.{np_precision}f}"
+            return f"{v:.2f}"
         else:
             return str(v)
 
@@ -848,7 +860,8 @@ def latex_expression(*args, precision=None, arraystretch=None, show_shape=False,
         Strings are passed through as-is.
         Arrays are converted to bmatrix format.
     precision : int, optional
-        Significant figures. SymPy: calls evalf(n). NumPy: decimal places. (default: None)
+        Significant figures, the same for SymPy numbers, Python floats and NumPy
+        floats. (default: None: SymPy numbers in full, floats to two decimals)
     arraystretch : float, optional
         Row spacing multiplier (default: None)
     show_shape : bool, optional

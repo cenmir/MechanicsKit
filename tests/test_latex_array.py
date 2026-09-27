@@ -300,12 +300,19 @@ class TestLatexExpression:
         assert latex_str.count("begin{bmatrix}") == 2
 
     def test_precision_parameter(self):
-        """Test custom precision."""
+        """precision is significant figures, for NumPy arrays too."""
         A = np.array([[1.123456, 2.987654]])
         expr = ltx("A=", A, precision=4)
         latex_str = expr._repr_latex_()
-        assert "1.1235" in latex_str
-        assert "2.9877" in latex_str
+        assert "1.123" in latex_str and "1.1235" not in latex_str
+        assert "2.988" in latex_str
+
+    def test_precision_same_for_every_number_type(self):
+        """A float, a NumPy float and a SymPy number print alike under one precision."""
+        import sympy as sp
+        for value in (345/1.2, np.float64(345/1.2), sp.Float(345)/sp.Float(1.2)):
+            assert str(ltx("s=", value, precision=4)) == "s=287.5"
+        assert str(ltx("d=", 1234567.891, precision=4)) == r"d=1.235 \cdot 10^{6}"
 
     def test_default_precision(self):
         """Test default precision is 2."""
