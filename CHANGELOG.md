@@ -33,7 +33,17 @@ decide patch vs. minor before pushing.
 
 ---
 
-## [0.9.3] - Unreleased
+## [0.9.4] - 2026-10-04
+
+### Changed
+
+- `sketch.label` draws its white outline (`halo=True`) by default, and so do
+  the labels that `force`, `angle`, `dimension` and `axes` draw. Labels that
+  have to cross a line or a tinted fill now read without each call asking for
+  it. `halo=False` gives the plain text that 0.9.3 made the default; `bg=` and
+  a `bbox` passed through work as before.
+
+## [0.9.3] - 2026-09-25
 
 ### Changed
 

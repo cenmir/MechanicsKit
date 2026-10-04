@@ -324,14 +324,14 @@ def rotation(ax, centre, r, a0=60, a1=120, color=GREEN, lw=1.6, zorder=5):
 
 
 def label(ax, xy, text, color="black", fontsize=12, zorder=7, bg=None, bgalpha=0.85,
-          halo=False, **kwargs):
-    """Centred text, plain by default.
+          halo=True, **kwargs):
+    """Centred text with a thin white outline around the glyphs.
 
-    A label is best placed where it is clear of every line, and then it needs no
-    backing. One that has to sit on a line gets either ``bg``, a box of that
-    colour behind the text with opacity ``bgalpha``, or ``halo=True``, a thin
-    white outline around the glyphs that hides far less of the drawing and reads
-    over a tinted fill too. A ``bbox`` passed in ``kwargs`` overrides ``bg``.
+    The outline (``halo``) lets a label cross a line, a hatch or a tinted fill and
+    still read, while hiding far less of the drawing than a box would. A label is
+    still best placed clear of every line. ``halo=False`` gives plain text, and
+    ``bg`` puts a box of that colour behind the text with opacity ``bgalpha``.
+    A ``bbox`` passed in ``kwargs`` overrides ``bg``.
     """
     kw = dict(ha="center", va="center", fontsize=fontsize, color=color, zorder=zorder)
     if bg is not None:
