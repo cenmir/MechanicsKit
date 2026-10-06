@@ -33,6 +33,48 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.10.0] - 2026-10-06
+
+### Added
+
+- `mechanicskit.sketch_extra`, moved here from the mechanics book's
+  `tools/` so that anyone can draw figures the way the book does:
+  `save_svg` (named SVG parts, real gradients and a data-to-SVG map for hand
+  edits), the gradient fills `shade`, `shaded_bar`, `shaded_rect` and a
+  fading `ground`, the shading stops (`STEEL_STOPS`, `TAN_STOPS`, ...), the
+  axonometric `Proj` with the 3D solids `vcylinder`, `rod3d`, `sphere`,
+  `box3d`, `thread3d` and the `speckle` texture, `embed_svg` and
+  `embed_svg_at` for licensed drawings, and the small helpers `vec`, `dot`,
+  `circled` and `HALO`.
+- `mechanicskit.svg_roundtrip`: `python -m mechanicskit.svg_roundtrip
+  fig.svg` lists what was moved, restyled, deleted or drawn in
+  `fig.edited.svg`, in the figure's own data units.
+- `docs/figures.md`, the method for redrawing a problem figure from a scan
+  or a hand drawing, with the rules the book learned the hard way, and
+  `skills/figure-redraw/SKILL.md`, the same method as a Claude Code skill.
+- `examples/figures/bar_spring_figures.py`, a worked setup figure and free
+  body diagram.
+- The drawing helpers the book's figure scripts had copied between them, now in
+  `sketch`: `polar`, `rot`, `arc`, `ccw`, `mirror_outline`, `outward`, `arrow`,
+  `unit_vectors`, `triad`, `curl` (a torque about a shaft), `radius`, `leader`,
+  `centreline`, `dashpot`, `box`, `rounded_rect`, `cog`; and from FBD Lab `coil`,
+  `trapezoid`, `ellipse`, `direction_line`, `break_line`. In `sketch_extra`: the
+  supports `support_pin`, `support_roller`, `support_rollers`, `support_slider`,
+  `pedestal`, `wall`, `hatched_wall`, `sliding_block`, `bracket`, plus
+  `Proj.from_view`, `Proj.arc` and `tone`.
+- `sketch.dimension` takes `text_offset`, `text_at` and `text_shift` to place its
+  value beside the line, and `offset=0` marks a span without extension lines.
+- `sketch.LABEL_HALO` turns the white label outline off for a whole script.
+
+### Changed
+
+- `sketch.force` labels are black (`text_color=`); colour belongs to the arrow.
+  `sketch_extra.vec` labels likewise.
+- `sketch.dimension` puts a white box behind its value instead of the outline
+  (`bg=None` for the outline), and any label given `bg=` drops the outline.
+
+---
+
 ## [0.9.4] - 2026-10-04
 
 ### Changed
