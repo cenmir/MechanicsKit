@@ -49,8 +49,8 @@ decide patch vs. minor before pushing.
 - `mechanicskit.svg_roundtrip`: `python -m mechanicskit.svg_roundtrip
   fig.svg` lists what was moved, restyled, deleted or drawn in
   `fig.edited.svg`, in the figure's own data units.
-- `docs/figures.md`, the method for redrawing a problem figure from a scan
-  or a hand drawing, with the rules the book learned the hard way, and
+- `docs/figures.md`, the method for redrawing a problem figure from a lecture
+  slide or a hand drawing, with the rules the book learned the hard way, and
   `skills/figure-redraw/SKILL.md`, the same method as a Claude Code skill.
 - `examples/figures/bar_spring_figures.py`, a worked setup figure and free
   body diagram.

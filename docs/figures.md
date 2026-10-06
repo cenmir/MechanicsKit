@@ -1,7 +1,7 @@
 # Redrawing problem figures as SVG
 
 This guide is the method behind the problem figures in Mirza Cenanovic's mechanics book: a
-textbook figure (Meriam, Hibbeler), a lecture slide or a hand drawing goes in, and a
+lecture slide, a hand drawing or a photo of a sketch goes in, and a
 short Python script comes out that draws the same problem in the book's own style and
 saves it as SVG. It is written for a person and for Claude Code alike. The matching
 Claude Code skill is [`skills/figure-redraw/SKILL.md`](../skills/figure-redraw/SKILL.md).
@@ -105,7 +105,7 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 
 Open the image and look at it; never work from its file name or from the prose around
 it. Two figures in the book were once captioned "Tension" and "Compression" from their
-names; they were a tensile-test record and a Hibbeler diagram from another chapter.
+names; they were a tensile-test record and a diagram from another chapter.
 For several images at once, read a contact sheet:
 
 ```bash
@@ -172,7 +172,7 @@ The redraw must carry the same information as the original, in our style. Mirza
 rejected the first clutch redraw because it did not match the original, and asked for it
 "bigger and more clear": the second version had bigger plates, shorter shafts, a
 taller aspect and the area element centred on the axis. For the lead screw the
-projection was changed until the viewpoint matched Meriam's. Clearer than the original
+projection was changed until the viewpoint matched the original's. Clearer than the original
 is the goal; different from it is not.
 
 ### 6. Put it in the document
@@ -483,7 +483,7 @@ report as false restyles.
 - **Where things go.** The script is `tools/<chapter>_figures.py`, the SVGs go to
   `<Part>/graphics/`, run from the book root with
   `env -u PYTHONPATH .venv/bin/python tools/<chapter>_figures.py [name ...]`. After a
-  redraw, `git rm` the scanned image and grep the notebooks for its old file name.
+  redraw, `git rm` the old image and grep the notebooks for its old file name.
 - **Every worked example is numbered** ("Example 3: ...") and its problem statement has
   a figure showing the geometry, supports, loads and given values. The order in an
   example is figure, equations, code, then a plot that verifies.
@@ -500,7 +500,6 @@ report as false restyles.
   too small is split onto two rows. Use `::: {#fig-x layout-ncol=2}` with `{#fig-x-a}`
   children for real subfigures.
 - **Credits** for drawings by others go in `ImageCredits.qmd`, never in the caption.
-  Hibbeler and Meriam scans are replaced, not credited.
 - **Dark mode**: the theme gives every SVG a white backing. `save_svg` writes a white
   figure background; transparent line art from elsewhere takes the `.white-bg` class.
 - **Code cells** that draw are folded (`#| code-fold: true`), and a plot labels the

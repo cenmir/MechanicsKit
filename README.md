@@ -371,7 +371,7 @@ plt.show()
 problem figure (ground, links, pins, springs, gears, forces, angles, dimensions,
 shaded bars, 3D solids) in one house style, and `sketch_extra.save_svg` writes an SVG
 that can be touched up in Inkscape and carried back into the script with
-`python -m mechanicskit.svg_roundtrip`. The method for redrawing a textbook figure or a
+`python -m mechanicskit.svg_roundtrip`. The method for redrawing a lecture slide or a
 hand drawing this way, and the rules learned while redrawing a whole book, are in
 [docs/figures.md](docs/figures.md); a runnable example is
 [examples/figures/bar_spring_figures.py](examples/figures/bar_spring_figures.py).
@@ -382,7 +382,7 @@ For Claude Code, the same method is a skill. Copy it once:
 cp -r skills/figure-redraw ~/.claude/skills/
 ```
 
-and ask for a figure ("redraw this Hibbeler figure as an SVG").
+and ask for a figure ("redraw this sketch as an SVG").
 
 
 ## Update History

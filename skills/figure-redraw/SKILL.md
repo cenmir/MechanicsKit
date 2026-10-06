@@ -1,6 +1,6 @@
 ---
 name: figure-redraw
-description: Redraw a problem figure (a Meriam or Hibbeler textbook image, a lecture slide, a hand drawing or a photo of a sketch) as a Python script that saves an SVG in the mechanics book's house style, using mechanicskit.sketch and mechanicskit.sketch_extra. Use when asked to recreate, redraw, replace or vectorise a figure, draw a free body diagram or problem figure, make a figure "like the ones in the book", or fix labels, arrows or layout in an existing figure script.
+description: Redraw a problem figure (a lecture slide, a hand drawing or a photo of a sketch) as a Python script that saves an SVG in the mechanics book's house style, using mechanicskit.sketch and mechanicskit.sketch_extra. Use when asked to recreate, redraw, replace or vectorise a figure, draw a free body diagram or problem figure, make a figure "like the ones in the book", or fix labels, arrows or layout in an existing figure script.
 ---
 
 # Redrawing a problem figure as SVG

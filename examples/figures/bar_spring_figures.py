@@ -3,7 +3,7 @@
 The problem: a uniform bar AB of length L is pinned to the wall at A and held at
 an angle theta above the horizontal by a spring from B to the ceiling at C. A
 force P hangs from B. The setup and the free body diagram below are drawn from
-those engineering parameters, never traced from the scanned image.
+those engineering parameters, never traced from the sketch.
 
     bar_spring.svg        the problem as stated, with dimensions and the angle
     bar_spring_fbd.svg    the bar cut free: the pin reactions, the spring force, P and mg
