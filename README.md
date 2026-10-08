@@ -6,6 +6,8 @@ The library's core capabilities include:
 - A LaTeX rendering pipeline for NumPy and SymPy objects in both Marimo and Jupyter notebooks.
 - A pedagogical `Mesh` class for finite element method (FEM) education that uses 1-based indexing to align with standard textbook notation.
 - A MATLAB-style `patch` function for advanced visualization of FEM meshes and results.
+- `draw_truss` and `animate_truss` for plane trusses with supports, loads and animated deformation.
+- `mechanicskit.sketch` and `sketch_extra` for problem figures (bodies, links, springs, gas springs, gears, forces, dimensions, 3D solids) in one house style, saved as editable SVG.
 
 ## Installation
 
@@ -368,8 +370,8 @@ plt.show()
 ### Problem figures as SVG
 
 `mechanicskit.sketch` and `mechanicskit.sketch_extra` draw the parts of a mechanics
-problem figure (ground, links, pins, springs, gears, forces, angles, dimensions,
-shaded bars, 3D solids) in one house style, and `sketch_extra.save_svg` writes an SVG
+problem figure (ground, links, pins, springs, dampers, gas springs, gears, forces,
+angles, dimensions, supports, shaded bars, 3D solids) in one house style, and `sketch_extra.save_svg` writes an SVG
 that can be touched up in Inkscape and carried back into the script with
 `python -m mechanicskit.svg_roundtrip`. The method for redrawing a lecture slide or a
 hand drawing this way, and the rules learned while redrawing a whole book, are in
@@ -386,6 +388,22 @@ and ask for a figure ("redraw this sketch as an SVG").
 
 
 ## Update History
+
+**October 2026 (v0.11.0)**
+- `sketch.gas_spring(ax, p0, p1, ...)`: a gas spring or hydraulic cylinder, tube end at `p0` and rod end at `p1`, with a mounting eye centred on each pin.
+
+**October 2026 (v0.10.0)**
+- `mechanicskit.sketch_extra` (SVG output with `save_svg`, gradient fills, supports, the axonometric `Proj` with 3D solids, `embed_svg` for licensed drawings) and `python -m mechanicskit.svg_roundtrip` for carrying Inkscape edits back into a figure script.
+- About twenty drawing helpers added to `sketch` (`arrow`, `curl`, `dashpot`, `coil`, `leader`, `radius`, `cog`, ...). `force` labels are black and `dimension` values sit in a white box.
+- The figure method in `docs/figures.md` and the Claude Code skill `skills/figure-redraw`.
+
+**September and October 2026 (v0.9.0 to v0.9.4)**
+- `mechanicskit.sketch`, the parts of a problem figure in the `draw_truss` palette. Labels carry a white outline by default (0.9.4).
+- `array | OneArray` builds a `OneArray` (0.9.1).
+- `ltx(..., precision=n)` means n significant figures for every number type (0.9.3).
+
+**September 2026 (v0.8.0, v0.8.1)**
+- `draw_truss`, `animate_truss`, `pin_support` and `roller_support`; `support_angles=` turns a support symbol.
 
 **May 2026 (v0.7.1)**
 - Added `wrap=True` / `wrap=N` option on `la` and `ltx` that breaks long SymPy `Add` expressions across `\begin{aligned}` lines so they fit page width in both HTML (MathJax) and PDF (LaTeX). `wrap=True` puts one summand per line, `wrap=N` packs `N` summands per line. `Eq(lhs, rhs)` keeps the LHS on the first line and aligns continuation lines after the `=`. Pipe forms `expr | la(wrap=True)` and `expr | la.wrap(N)` are also supported.

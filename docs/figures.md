@@ -51,6 +51,7 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `sk.spring(ax, p0, p1, coils, width)` | a zigzag spring |
 | `sk.coil(ax, p0, p1, coils, width)` | a smooth spring of S-shaped waves, as FBD Lab draws it |
 | `sk.dashpot(ax, p0, p1, width, lead, cup)` | a damper, cylinder end at p0, at any angle |
+| `sk.gas_spring(ax, p0, p1, width, tube, rod)` | a gas spring or hydraulic cylinder in steel, tube at p0, eyes centred on both pins |
 | `sk.box(ax, xy, w, h, angle, centred)` | a block or crate: corner (or centre) and size, turned |
 | `sk.trapezoid(ax, centre, w_bottom, w_top, h, angle)` | a wedge or a pad |
 | `sk.ellipse(ax, centre, w, h, angle)` | a disc or a wheel seen at an angle |

@@ -33,6 +33,20 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.11.0] - 2026-10-08
+
+### Added
+
+- `sketch.gas_spring(ax, p0, p1, width, tube, rod, eye)`: a gas spring or
+  hydraulic cylinder, tube end at `p0` and rod end at `p1`, with a mounting eye
+  centred on each pin. Drawn for the toy-box lid example of the book's Springs
+  chapter.
+
+### Changed
+
+- README: the capability list names the truss and figure tools, and the update
+  history covers 0.8.0 to 0.11.0.
+
 ## [0.10.0] - 2026-10-06
 
 ### Added

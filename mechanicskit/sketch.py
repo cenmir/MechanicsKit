@@ -34,7 +34,8 @@ from .truss import BODY, GROUND, EDGE, LOAD
 __all__ = [
     "BODY", "GROUND", "EDGE", "LOAD", "BLUE", "GREEN", "GREY", "STEEL", "STEEL_EDGE",
     "LABEL_HALO",
-    "canvas", "ground", "body", "link", "pin", "spring", "coil", "dashpot", "gear", "hub",
+    "canvas", "ground", "body", "link", "pin", "spring", "coil", "dashpot", "gas_spring",
+    "gear", "hub",
     "box", "rounded_rect", "trapezoid", "ellipse", "cog",
     "force", "angle", "dimension", "axes", "triad", "guide", "centreline", "rotation",
     "curl", "radius", "leader", "arrow", "unit_vectors", "direction_line", "break_line",
@@ -248,6 +249,28 @@ def dashpot(ax, p0, p1, width=0.5, lead=0.15, cup=0.45, color=EDGE, lw=1.3, plat
     ax.plot(*zip(q + 0.38*width*n, q - 0.38*width*n), color=color, lw=plate_lw,
             zorder=zorder)
     ax.plot(*zip(q, p1), color=color, lw=lw, zorder=zorder)
+
+
+def gas_spring(ax, p0, p1, width=0.12, tube=0.55, rod=0.4, eye=None, facecolor=STEEL,
+               edgecolor=STEEL_EDGE, zorder=3):
+    """A gas spring or hydraulic cylinder from ``p0`` (tube end) to ``p1`` (rod end).
+
+    The tube is ``width`` wide and ``tube`` of the whole length long, the rod is ``rod``
+    times as wide, and each end carries a mounting eye of radius ``eye`` (default
+    ``0.45*width``) centred on the end point, so ``p0`` and ``p1`` are the pin centres.
+    """
+    p0, p1 = _xy(p0), _xy(p1)
+    L = np.linalg.norm(p1 - p0)
+    a = _unit(p1 - p0)
+    r = 0.45*width if eye is None else eye
+    link(ax, p0 + tube*L*a - 0.5*width*a, p1, width=rod*width, facecolor=facecolor,
+         edgecolor=edgecolor, zorder=zorder, round_ends=False)
+    link(ax, p0 + r*a, p0 + tube*L*a, width=width, facecolor=facecolor,
+         edgecolor=edgecolor, zorder=zorder + 0.1, round_ends=True)
+    for p in (p0, p1):
+        ax.add_patch(Circle(p, 1.6*r, facecolor=facecolor, edgecolor=edgecolor, lw=LW,
+                            zorder=zorder + 0.2))
+        pin(ax, p, r=0.7*r, zorder=zorder + 0.3)
 
 
 def box(ax, xy, w, h, angle=0.0, centred=False, **kwargs):
