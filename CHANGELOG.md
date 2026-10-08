@@ -403,7 +403,7 @@ the dashed ghost, and `colorbar=False` suppresses the colourbar that goes with
   `evalf(n)` on SymPy values rather than just formatting NumPy floats to
   `n` decimals. Pass `precision=2` explicitly for the old behavior.
 
-## [0.13.0] - 2026-10-08
+## [Unreleased]
 
 ### Added
 - **Intelligent color interpolation for 2D surface patches**
