@@ -333,21 +333,26 @@ class Proj:
         return self(centre + r*(np.cos(m)*u + np.sin(m)*v))
 
     def force(self, ax, p, d, length, text=None, offset=(0, 0), color=sk.LOAD, head=False,
-              fontsize=13):
-        """A force of 3D ``length`` along the 3D direction ``d`` at the 3D point ``p``."""
+              fontsize=13, text_color='black'):
+        """A force of 3D ``length`` along the 3D direction ``d`` at the 3D point ``p``.
+
+        Pass ``text_color=color`` for a label in the colour of its arrow, the book's rule.
+        """
         p, d = np.asarray(p, float), np.asarray(d, float)
         d = d/np.linalg.norm(d)
         tail, tip = (p - length*d, p) if head else (p, p + length*d)
-        vec(ax, self(tail), self(tip), color, text, offset, fontsize)
+        vec(ax, self(tail), self(tip), color, text, offset, fontsize, text_color=text_color)
 
 
-def vec(ax, p0, p1, color, text=None, offset=(0, 0), fontsize=13, lw=2.0, zorder=6):
-    """An arrow from ``p0`` to ``p1`` with its label beside the head."""
+def vec(ax, p0, p1, color, text=None, offset=(0, 0), fontsize=13, lw=2.0, zorder=6,
+        text_color='black'):
+    """An arrow from ``p0`` to ``p1`` with its label beside the head, in ``text_color``."""
     p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
     ax.add_patch(FancyArrowPatch(p0, p1, arrowstyle='-|>', mutation_scale=15,
                                  color=color, lw=lw, shrinkA=0, shrinkB=0, zorder=zorder))
     if text is not None:
-        sk.label(ax, p1 + np.asarray(offset), text, fontsize=fontsize, zorder=zorder + 1)
+        sk.label(ax, p1 + np.asarray(offset), text, color=text_color, fontsize=fontsize,
+                 zorder=zorder + 1)
 
 
 # the white outline every label in the book carries, for text drawn without sk.label

@@ -35,9 +35,10 @@ __all__ = [
     "BODY", "GROUND", "EDGE", "LOAD", "BLUE", "GREEN", "GREY", "STEEL", "STEEL_EDGE",
     "LABEL_HALO",
     "canvas", "ground", "body", "link", "pin", "spring", "coil", "dashpot", "gas_spring",
+    "helix_centres", "helical_spring",
     "gear", "hub",
     "box", "rounded_rect", "trapezoid", "ellipse", "cog",
-    "force", "angle", "dimension", "axes", "triad", "guide", "centreline", "rotation",
+    "force", "moment_vector", "angle", "dimension", "axes", "triad", "guide", "centreline", "rotation",
     "curl", "radius", "leader", "arrow", "unit_vectors", "direction_line", "break_line",
     "label", "gear_outline", "unit", "normal", "polar", "rot", "arc", "ccw",
     "mirror_outline", "outward",
@@ -273,6 +274,73 @@ def gas_spring(ax, p0, p1, width=0.12, tube=0.55, rod=0.4, eye=None, facecolor=S
         pin(ax, p, r=0.7*r, zorder=zorder + 0.3)
 
 
+
+def helix_centres(d, p, n_active, n_closed=1):
+    """Heights of the wire centre of a helical spring at each half turn, bottom coil first.
+
+    Even entries lie on the right of the axis, odd ones on the left. The ``n_closed``
+    end coils at each end advance by ``d`` per turn, the active coils by the pitch ``p``.
+    The bottom of the wire lies at height 0.
+    """
+    steps = [d/2]*(2*n_closed) + [p/2]*(2*n_active) + [d/2]*(2*n_closed)
+    return d/2 + np.r_[0, np.cumsum(steps)]
+
+
+def helical_spring(ax, x0, D, d, z, z0=0.0, cut_top=False, facecolor=STEEL,
+                   edgecolor=STEEL_EDGE, zorder=3, ground=None):
+    """Side view of a helical spring of coil diameter ``D`` and wire ``d``, as a drawing shows it.
+
+    ``z`` are the wire-centre heights of :func:`helix_centres`. Every crossing of the
+    outline is drawn as a section of the wire, and the front half of each turn as a band
+    from the right section up to the next left one. ``cut_top`` leaves the last section
+    open, for a spring cut there. ``ground=(z_bottom, z_top)`` grinds the ends flat: the
+    wire is cut off below ``z_bottom`` and above ``z_top`` (heights in the frame of ``z``),
+    and each cut is closed by a straight edge, the ground face. Returns the section centres.
+    """
+    R = D/2
+    pts = [(x0 + (R if k % 2 == 0 else -R), z0 + zk) for k, zk in enumerate(z)]
+    clip = None
+    if ground is not None:
+        lo, hi = z0 + ground[0], z0 + ground[1]
+        clip = Polygon([(x0 - R - d, lo), (x0 + R + d, lo), (x0 + R + d, hi), (x0 - R - d, hi)],
+                       closed=True, facecolor="none", edgecolor="none")
+        ax.add_patch(clip)
+    patches = []
+    for (xa, za), (xb, zb) in zip(pts[0::2], pts[1::2]):
+        t = np.array([xb - xa, zb - za])
+        nrm = np.array([-t[1], t[0]])/np.hypot(*t)*d/2
+        patches.append(body(ax, [(xa, za) + nrm, (xb, zb) + nrm, (xb, zb) - nrm, (xa, za) - nrm],
+                            facecolor=facecolor, edgecolor=edgecolor, zorder=zorder))
+    last = len(pts) - 1 if cut_top else len(pts)
+    for x, zz in pts[:last]:
+        patches.append(ax.add_patch(Circle((x, zz), d/2, facecolor=facecolor,
+                                           edgecolor=edgecolor, lw=LW, zorder=zorder + 1)))
+    if clip is not None:
+        for patch in patches:
+            patch.set_clip_path(clip)
+        # the ground faces: a straight edge wherever the cut passes through the wire,
+        # in the round sections and in the bands between them
+        for zc in (lo, hi):
+            spans = []
+            for x, zz in pts[:last]:
+                h = abs(zc - zz)
+                if h < d/2:
+                    w = np.sqrt((d/2)**2 - h**2)
+                    spans.append((x - w, x + w))
+            for patch in patches:
+                if isinstance(patch, Circle):
+                    continue
+                xy = patch.get_xy()
+                xs = [xa + (zc - za)*(xb - xa)/(zb - za)
+                      for (xa, za), (xb, zb) in zip(xy[:-1], xy[1:])
+                      if (za - zc)*(zb - zc) < 0]
+                if len(xs) >= 2:
+                    spans.append((min(xs), max(xs)))
+            for xa, xb in spans:
+                ax.plot([xa, xb], [zc, zc], color=edgecolor, lw=LW, solid_capstyle="butt",
+                        zorder=zorder + 2)
+    return pts
+
 def box(ax, xy, w, h, angle=0.0, centred=False, **kwargs):
     """A rectangle of width ``w`` and height ``h``: a block, a crate, a slider.
 
@@ -409,8 +477,9 @@ def force(ax, point, direction, length, text=None, color=LOAD, head=False,
 
     The arrow starts at ``point``. With ``head=True`` it ends there instead,
     which is how a push is drawn. The label goes beside the free end, moved by
-    ``offset`` if that is given; it is black (``text_color``), colour belongs to
-    the arrow.
+    ``offset`` if that is given. The book's rule is that a label takes the colour
+    of its arrow, so pass ``text_color`` (``LOAD`` for an applied force, ``BLUE``
+    for a resultant, ``GREEN`` for an internal force); the default is black.
     """
     p, u = _xy(point), _unit(direction)
     tail, tip = (p - length*u, p) if head else (p, p + length*u)
@@ -422,6 +491,27 @@ def force(ax, point, direction, length, text=None, color=LOAD, head=False,
         off = _xy(offset) if offset is not None else 0.35*length*u*(-1 if head else 1)
         label(ax, free + off, text, color=text_color, fontsize=fontsize, zorder=zorder + 1)
 
+
+
+def moment_vector(ax, point, direction, length, text=None, color=LOAD, text_color=None,
+                  head_gap=None, offset=None, fontsize=12, lw=1.6, ms=13, zorder=6):
+    """A moment or torque drawn as a vector with a double head, from ``point`` along ``direction``.
+
+    The sense of rotation follows the right-hand rule about the arrow, which reads the same
+    from any side, unlike a curved arrow drawn around an axis. The second head sits
+    ``head_gap`` (default 0.18 of the length) behind the first. The label goes beside the
+    middle of the arrow, moved by ``offset``, in ``text_color`` (default: the arrow's colour).
+    """
+    p, u = _xy(point), _unit(direction)
+    gap = 0.18*length if head_gap is None else head_gap
+    for k in (0.0, gap):
+        ax.add_patch(FancyArrowPatch(p, p + (length - k)*u, arrowstyle="-|>",
+                                     mutation_scale=ms, color=color, lw=lw, shrinkA=0,
+                                     shrinkB=0, zorder=zorder))
+    if text is not None:
+        off = _xy(offset) if offset is not None else 0.25*length*_normal(u)
+        label(ax, p + 0.5*length*u + off, text, color=text_color or color, fontsize=fontsize,
+              zorder=zorder + 1)
 
 def angle(ax, centre, r, a0, a1, text=None, color=GREY, fontsize=11, text_r=None,
           zorder=3):

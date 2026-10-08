@@ -21,3 +21,12 @@ and `mechanicskit/__init__.py` in lockstep, and add a `## [x.y.z]`
 section to `CHANGELOG.md`.
 
 A `pre-push` hook in `.git/hooks/pre-push` reprints this policy.
+
+## Figures
+
+Any figure drawn with `mechanicskit.sketch` / `sketch_extra` follows `docs/figures.md`;
+the short version is `skills/figure-redraw/SKILL.md`. Read one of them before drawing.
+Colours carry meaning: red (`sk.LOAD`) applied forces, blue (`sk.BLUE`) resultants and
+displacements, green (`sk.GREEN`) internal forces and rotations, and **a label takes the
+colour of the arrow it names** (`sk.force(..., text_color=...)`); geometry labels stay
+black.

@@ -52,12 +52,14 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `sk.coil(ax, p0, p1, coils, width)` | a smooth spring of S-shaped waves, as FBD Lab draws it |
 | `sk.dashpot(ax, p0, p1, width, lead, cup)` | a damper, cylinder end at p0, at any angle |
 | `sk.gas_spring(ax, p0, p1, width, tube, rod)` | a gas spring or hydraulic cylinder in steel, tube at p0, eyes centred on both pins |
+| `sk.helix_centres(d, p, n_active, n_closed)` / `sk.helical_spring(ax, x0, D, d, z)` | a helical compression spring in side view, wire sections and front bands, closed end coils |
 | `sk.box(ax, xy, w, h, angle, centred)` | a block or crate: corner (or centre) and size, turned |
 | `sk.trapezoid(ax, centre, w_bottom, w_top, h, angle)` | a wedge or a pad |
 | `sk.ellipse(ax, centre, w, h, angle)` | a disc or a wheel seen at an angle |
 | `sk.cog(ax, p, r)` | the centre-of-mass symbol, a quartered circle |
 | `sk.gear(ax, centre, N, module, angle)` / `sk.hub` | an involute spur gear, a hub |
 | `sk.force(ax, point, direction, length, text, head=False, offset=None)` | a force arrow; starts at `point`, or ends there with `head=True` |
+| `sk.moment_vector(ax, point, direction, length, text, head_gap)` | a moment or torque as a double-headed vector, right-hand rule; unambiguous from any side |
 | `sk.angle(ax, centre, r, a0, a1, text, text_r)` | an angle arc, anticlockwise from `a0` to `a1` degrees |
 | `sk.dimension(ax, p0, p1, offset, text, gap, text_side, text_offset, text_at, text_shift)` | a dimension with extension lines, `offset` to the left of p0→p1; `offset=0` marks the span on p0→p1 itself with no extension lines; `text_offset` puts the value that far to the left of the line, `text_at` that fraction along it |
 | `sk.axes(ax, origin, length, angle_deg, labels)` | a pair of coordinate axes |
@@ -240,16 +242,35 @@ figure, so run all figures after a change and check that each one was written.
 
 ### Palette
 
-| Constant | Value | For |
-|---|---|---|
-| `sk.BODY` | `#d8ba94` tan | brackets, links, blocks, pedestals |
-| `sk.GROUND` | `#9c8876` | fixed surfaces, a band fading from 0.9 to 0 opacity |
-| `sk.EDGE` | black | outlines, `sk.LW = 1.1` |
-| `sk.LOAD` | `#c00000` red | external forces and moments |
-| `sk.BLUE` | `#4472c4` | displacements, velocities, degrees of freedom, coordinates |
-| `sk.GREEN` | `#2e7d32` | internal forces, rotations, circled body numbers |
-| `sk.GREY` | `0.35` | construction lines, angle arcs, dimensions |
-| `sk.STEEL` / `sk.STEEL_EDGE` | `#bcd4e3` / `#236b8e` | machine parts, gears, balls, pulleys |
+| Constant | Value | For | Its label |
+|---|---|---|---|
+| `sk.BODY` | `#d8ba94` tan | brackets, links, blocks, pedestals | black point letters |
+| `sk.GROUND` | `#9c8876` | fixed surfaces, a band fading from 0.9 to 0 opacity | none |
+| `sk.EDGE` | black | outlines, `sk.LW = 1.1` | black |
+| `sk.LOAD` | `#c00000` red | applied forces and moments, weights, reactions, contact forces | red |
+| `sk.BLUE` | `#4472c4` | resultants, displacements, velocities, degrees of freedom | blue |
+| `sk.GREEN` | `#2e7d32` | internal forces and moments, rotations, circled body numbers | green |
+| `sk.GREY` | `0.35` | construction lines, angle arcs, dimensions | black |
+| `sk.STEEL` / `sk.STEEL_EDGE` | `#bcd4e3` / `#236b8e` | machine parts, gears, balls, pulleys | black |
+
+**Colour carries meaning, so the label of an arrow is drawn in the arrow's colour.** A
+reader then pairs every symbol with its arrow at a glance, even where arrows crowd at a
+contact point. The screw figures of the Friction chapter are the reference: the weight
+$W$, the push $M/r$, the friction $F$ and the normal force $N$ are red with red labels,
+their resultant $R$ is blue with a blue label, and the angles $\theta$ and $\alpha$, the
+normal $n$ and the points are black. Everything that is geometry (points, angles,
+dimensions, axes, unit vectors) stays black.
+
+```python
+sk.force(ax, B, e_CB, 70, r'$\mathbf{F}_S$', text_color=sk.LOAD)          # applied: red
+sk.force(ax, O, e_R, 1.2, '$R$', color=sk.BLUE, text_color=sk.BLUE)       # resultant: blue
+sk.force(ax, cut, (0, 1), 9, '$V$', color=sk.GREEN, text_color=sk.GREEN)  # internal: green
+sk.rotation(ax, c, 5, a0=200, a1=-70)                                       # green by default
+sk.label(ax, c + (9, 4), '$M$', color=sk.GREEN)                             # its label too
+sk.angle(ax, O, 1.0, 0, 30, r'$\theta$')                                     # geometry: black
+```
+
+`sk.force` draws its label black unless `text_color` is given, so pass it every time.
 
 Unit vectors are black and thinner than loads (`sk.force(..., color='black', lw=1.4)`)
 so they do not read as forces. A ghost position (start, end, apparent position) is the
@@ -288,9 +309,12 @@ caption names the quantity the colours show.
   `sk.LABEL_HALO = False` for the whole script. `bg='white'` puts a box behind the
   text instead of the outline: `sk.dimension` does this for its value by default,
   the drafting style where the value interrupts the line (`bg=None` gives the outline).
-- **All labels are black**, force labels included: colour belongs to the arrows. This
-  is Mirza's rule for simplicity (October 2026). Older figures in the book still have
-  red force labels; `sk.force(..., text=...)` draws its label black since 0.10.0.
+- **A label takes the colour of the arrow it names**: red for applied forces, blue for a
+  resultant or displacement, green for internal forces and moments. Labels of geometry
+  (points, angles, dimensions, axes) stay black. Coloured force labels make a free body
+  diagram easier to read (Mirza, 8 October 2026, replacing an earlier all-black rule).
+  `sk.force` still draws its label black by default, so pass `text_color=` with the
+  arrow's colour.
 - Label size: one `FS` per script, 13 or 14 for figures shown at 50 to 70 % width, up to
   16 for a figure shown at full width. Grey notes ("free body diagram", "taut") use
   `FS - 3` in `sk.GREY`.

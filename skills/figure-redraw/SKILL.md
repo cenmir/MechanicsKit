@@ -38,8 +38,9 @@ install with `pip install git+https://github.com/cenmir/mechanicskit.git`), plus
 - `ground(ax, points)` puts the solid on the **right** of the walking direction: floor
   left→right, ceiling right→left, wall with solid on its left top→bottom.
 - Labels: move them clear of lines first; the white outline (`halo=True`, the default)
-  is the safety net. All labels are black, force labels too; colour belongs to the
-  arrows. Draw `sk.force` without `text` and place a black `sk.label` yourself.
+  is the safety net. A label takes the colour of the arrow it names (red loads,
+  blue resultants, green internal forces); geometry labels stay black. Pass
+  `text_color=` to `sk.force`, whose default is still black.
 - `sk.force` starts at the point; `head=True` ends there (a push, a contact force).
   Reactions in a free body diagram point in the positive axis directions.
 - Angles are measured from the line the text names, with a `sk.guide` along it.
@@ -51,9 +52,18 @@ install with `pip install git+https://github.com/cenmir/mechanicskit.git`), plus
   strings, and never edit label strings with `sed` or a shell heredoc.
 - The figure must obey the physics the text states: small deformations keep rods on
   their lines, columns bow away from the load, sign conventions match the chapter.
-- Palette: `sk.LOAD` red forces, `sk.BLUE` displacements and coordinates, `sk.GREEN`
-  internal forces and rotations, `sk.GREY` construction, `sk.BODY` tan bodies,
-  `sk.STEEL` machine parts, white background.
+- Palette, with the label in the same colour as its arrow:
+
+  | Arrow | Colour | Label |
+  |---|---|---|
+  | applied force or moment, weight, reaction, contact force | `sk.LOAD` red | red |
+  | resultant, displacement, velocity, degree of freedom | `sk.BLUE` | blue |
+  | internal force or moment, rotation arrow | `sk.GREEN` | green |
+  | unit vector | black, `lw=1.4` | black |
+
+  Points, angles, dimensions and axes are labelled in black; construction lines, arcs
+  and dimensions are `sk.GREY`; bodies `sk.BODY` tan, machine parts `sk.STEEL`; white
+  background. Example: `sk.force(ax, B, d, 70, '$F$', text_color=sk.LOAD)`.
 
 ## New parts go into MechanicsKit
 

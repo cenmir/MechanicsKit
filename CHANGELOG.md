@@ -33,6 +33,25 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.12.0] - 2026-10-08
+
+### Added
+
+- `sketch.helix_centres(d, p, n_active, n_closed)` and
+  `sketch.helical_spring(ax, x0, D, d, z)`: a helical compression spring in side view,
+  wire sections and the front half of each turn, with closed end coils. Moved here from
+  the book's springs figure script; also used by the SpringCheck and SpringMeasure
+  notebooks.
+- `sketch.moment_vector(ax, point, direction, length, text)`: a moment or torque as a
+  double-headed vector (right-hand rule), replacing two copies in the book's figure scripts.
+- `sketch_extra.vec(..., text_color=)` and `Proj.force(..., text_color=)`, so that a
+  label can take the colour of its arrow.
+
+### Changed
+
+- The figure guide, the figure-redraw skill, `CLAUDE.md` and a new `AGENTS.md` state the
+  colour rule: a label takes the colour of the arrow it names.
+
 ## [0.11.0] - 2026-10-08
 
 ### Added
