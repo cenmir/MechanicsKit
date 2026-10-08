@@ -38,7 +38,7 @@ __all__ = [
     "helix_centres", "helical_spring",
     "gear", "hub",
     "box", "rounded_rect", "trapezoid", "ellipse", "cog",
-    "force", "moment_vector", "angle", "dimension", "axes", "triad", "guide", "centreline", "rotation",
+    "force", "moment_vector", "angle", "right_angle", "dimension", "axes", "triad", "guide", "centreline", "rotation",
     "curl", "radius", "leader", "arrow", "unit_vectors", "direction_line", "break_line",
     "label", "gear_outline", "unit", "normal", "polar", "rot", "arc", "ccw",
     "mirror_outline", "outward",
@@ -524,6 +524,13 @@ def angle(ax, centre, r, a0, a1, text=None, color=GREY, fontsize=11, text_r=None
         rt = 1.45*r if text_r is None else text_r
         label(ax, c + rt*np.array([np.cos(tm), np.sin(tm)]), text, color="black",
               fontsize=fontsize, zorder=zorder + 1)
+
+
+def right_angle(ax, corner, d1, d2, size, color=GREY, lw=0.8, zorder=4):
+    """The small square that marks a right angle at ``corner`` between directions ``d1``, ``d2``."""
+    c, u, v = _xy(corner), size*_unit(d1), size*_unit(d2)
+    pts = np.array([c + u, c + u + v, c + v])
+    ax.plot(pts[:, 0], pts[:, 1], color=color, lw=lw, zorder=zorder)
 
 
 def dimension(ax, p0, p1, offset, text, color=GREY, fontsize=11, gap=0.02,

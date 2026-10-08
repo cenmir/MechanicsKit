@@ -33,6 +33,13 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.13.0] - 2026-10-08
+
+### Added
+
+- `sketch.right_angle(ax, corner, d1, d2, size)`: the square that marks a right
+  angle between two directions, as at the foot of a perpendicular.
+
 ## [0.12.0] - 2026-10-08
 
 ### Added
@@ -396,7 +403,7 @@ the dashed ghost, and `colorbar=False` suppresses the colourbar that goes with
   `evalf(n)` on SymPy values rather than just formatting NumPy floats to
   `n` decimals. Pass `precision=2` explicitly for the old behavior.
 
-## [Unreleased]
+## [0.13.0] - 2026-10-08
 
 ### Added
 - **Intelligent color interpolation for 2D surface patches**
