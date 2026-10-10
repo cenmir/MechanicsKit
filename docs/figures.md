@@ -62,6 +62,8 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `sk.moment_vector(ax, point, direction, length, text, head_gap)` | a moment or torque as a double-headed vector, right-hand rule; unambiguous from any side |
 | `sk.angle(ax, centre, r, a0, a1, text, text_r)` | an angle arc, anticlockwise from `a0` to `a1` degrees |
 | `sk.right_angle(ax, corner, d1, d2, size)` | the square marking a right angle between directions `d1` and `d2` |
+| `sk.thread_profile(x0, x1, P, r_minor, r_major)` | ISO 68-1 basic thread profile in an axial section, as points |
+| `sk.helix(ax, xc, r, y0, y1, lead, back=False)` | a right-hand helix on a cylinder seen from the side |
 | `sk.dimension(ax, p0, p1, offset, text, gap, text_side, text_offset, text_at, text_shift)` | a dimension with extension lines, `offset` to the left of p0→p1; `offset=0` marks the span on p0→p1 itself with no extension lines; `text_offset` puts the value that far to the left of the line, `text_at` that fraction along it |
 | `sk.axes(ax, origin, length, angle_deg, labels)` | a pair of coordinate axes |
 | `sk.triad(ax, origin, dirs, labels, length, gap, offsets)` | axes along any directions, each letter past its tip, clear of the head |

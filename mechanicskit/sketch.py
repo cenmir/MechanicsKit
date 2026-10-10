@@ -35,7 +35,7 @@ __all__ = [
     "BODY", "GROUND", "EDGE", "LOAD", "BLUE", "GREEN", "GREY", "STEEL", "STEEL_EDGE",
     "LABEL_HALO",
     "canvas", "ground", "body", "link", "pin", "spring", "coil", "dashpot", "gas_spring",
-    "helix_centres", "helical_spring",
+    "helix_centres", "helical_spring", "thread_profile", "helix",
     "gear", "hub",
     "box", "rounded_rect", "trapezoid", "ellipse", "cog",
     "force", "moment_vector", "angle", "right_angle", "dimension", "axes", "triad", "guide", "centreline", "rotation",
@@ -393,6 +393,45 @@ def cog(ax, p, r=0.09, zorder=6):
 
 
 # --- gears ----------------------------------------------------------------------
+
+def thread_profile(x0, x1, P, r_minor, r_major, phase=0.0):
+    """The ISO 68-1 basic thread profile in an axial section, as an (n, 2) polyline.
+
+    x runs along the axis from x0 to x1, y is the radius. The profile has a flat of P/4
+    at the minor radius and of P/8 at the major radius, joined by straight flanks; with
+    r_major - r_minor = 5H/8 (H = sqrt(3) P/2) the flanks make 60 degrees with each other.
+    `phase` shifts the profile along the axis; x = x0 + phase is the middle of a root flat.
+    The same line bounds the bolt (below it) and the nut (above it).
+    """
+    k0 = int(np.floor((x0 - x0 - phase)/P)) - 1
+    pts = []
+    for k in range(k0, k0 + int(np.ceil((x1 - x0)/P)) + 3):
+        c = x0 + phase + k*P                           # middle of a root flat
+        for dx, r in ((-P/8, r_minor), (P/8, r_minor), (P/2 - P/16, r_major),
+                      (P/2 + P/16, r_major)):
+            pts.append((c + dx, r))
+    pts = np.array(pts)
+    xs = np.unique(np.r_[pts[:, 0], x0, x1])
+    xs = xs[(xs >= x0) & (xs <= x1)]
+    return np.c_[xs, np.interp(xs, pts[:, 0], pts[:, 1])]
+
+
+def helix(ax, xc, r, y0, y1, lead, back=False, color=EDGE, lw=0.8, zorder=3):
+    """A helix of the given lead on a vertical cylinder of radius r at x = xc, seen from
+    the side, between the heights y0 and y1: the front half solid, the back half dashed
+    when `back` is True. Right-hand: the front half rises from left to right.
+    """
+    t = np.linspace(-np.pi/2, 3*np.pi/2, 160)
+    for yb in np.arange(y0 - 2*lead, y1 + lead, lead):
+        x = xc + r*np.sin(t)
+        y = yb + lead*(t + np.pi/2)/(2*np.pi)
+        y = np.where((y >= y0) & (y <= y1), y, np.nan)
+        front = np.cos(t) >= 0
+        ax.plot(x, np.where(front, y, np.nan), color=color, lw=lw, zorder=zorder)
+        if back:
+            ax.plot(x, np.where(~front, y, np.nan), color=color, lw=lw*0.8,
+                    ls=(0, (3, 2)), zorder=zorder - 0.5)
+
 
 def gear_outline(N, module=1.0, phi_deg=20.0, n_pts=120):
     """The closed outline of an involute spur gear, centred at the origin.

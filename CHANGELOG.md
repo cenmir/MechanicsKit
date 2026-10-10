@@ -33,6 +33,15 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.14.0] - 2026-10-10
+
+### Added
+
+- `sketch.thread_profile(x0, x1, P, r_minor, r_major)`: the ISO 68-1 basic thread
+  profile in an axial section, as a polyline, for bolts, nuts and thread details.
+- `sketch.helix(ax, xc, r, y0, y1, lead, back=False)`: a helix on a cylinder seen
+  from the side, front half solid and back half dashed, for screws and threads.
+
 ## [0.13.0] - 2026-10-08
 
 ### Added
