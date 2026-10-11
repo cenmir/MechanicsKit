@@ -45,6 +45,7 @@ from .arrow import arrow
 from .truss import draw_truss, animate_truss, pin_support, roller_support
 from . import sketch
 from . import sketch_extra
+from . import fits
 from .gaussint import gaussint
 from .colormap_utils import colorbar, cmap
 from .help import quick_ref
@@ -52,7 +53,7 @@ from .animation_utils import to_responsive_html
 from .markdown import md, Markdown
 
 # Version information
-__version__ = '0.14.0'
+__version__ = '0.15.0'
 
 def version():
     """

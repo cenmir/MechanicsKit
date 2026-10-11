@@ -33,6 +33,24 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.15.0] - 2026-10-11
+
+### Added
+
+- `mechanicskit.fits`: ISO 286 limits and fits on the hole basis. Tolerance grades IT5 to
+  IT13 and the fundamental deviations of the shaft letters c to u for sizes up to 400 mm;
+  `limits('H7/s6', 60)`, `interference(fit, d)`, `kind(fit, d)` and the list
+  `PREFERRED_FITS` with the character and typical uses of each fit. Used by the shaft-hub
+  chapter of the book and its ISO fits notebook.
+- `sketch.annulus(ax, centre, r_in, r_out, a0, a1, hatch)`: a ring or ring segment in
+  section, for hubs, tubes and bearing rings.
+- `sketch.radial_load(ax, centre, r, angles, length, side)`: a pressure on a circular
+  surface as arrows ending on it, from outside or from inside, with one length per angle
+  for a distribution.
+- `sketch.spline_outline(centre, r_major, r_minor, n, width)` and
+  `sketch.polygon_outline(centre, r, e, lobes)`: a straight-sided spline shaft and a
+  polygon (P3G) shaft in section, as outlines.
+
 ## [0.14.0] - 2026-10-10
 
 ### Added

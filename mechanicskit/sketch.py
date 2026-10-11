@@ -27,7 +27,7 @@ from __future__ import annotations
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import patheffects
-from matplotlib.patches import Circle, FancyArrowPatch, Polygon
+from matplotlib.patches import Circle, FancyArrowPatch, Polygon, Wedge
 
 from .truss import BODY, GROUND, EDGE, LOAD
 
@@ -37,7 +37,7 @@ __all__ = [
     "canvas", "ground", "body", "link", "pin", "spring", "coil", "dashpot", "gas_spring",
     "helix_centres", "helical_spring", "thread_profile", "helix",
     "gear", "hub",
-    "box", "rounded_rect", "trapezoid", "ellipse", "cog",
+    "box", "rounded_rect", "trapezoid", "ellipse", "cog", "annulus", "radial_load", "spline_outline", "polygon_outline",
     "force", "moment_vector", "angle", "right_angle", "dimension", "axes", "triad", "guide", "centreline", "rotation",
     "curl", "radius", "leader", "arrow", "unit_vectors", "direction_line", "break_line",
     "label", "gear_outline", "unit", "normal", "polar", "rot", "arc", "ccw",
@@ -380,6 +380,63 @@ def ellipse(ax, centre, w, h, angle=0.0, facecolor=BODY, edgecolor=EDGE, zorder=
                     edgecolor=edgecolor, lw=LW, zorder=zorder, **kwargs)
     ax.add_patch(patch)
     return patch
+
+
+def spline_outline(centre, r_major, r_minor, n=6, width=None, angle=90.0):
+    """Outline of a straight-sided spline shaft (ISO 14 style): ``n`` teeth of
+    ``width`` across, from the minor to the major radius, the first at ``angle``
+    degrees. Returns an (m, 2) array; scale it about the centre for the hub's bore."""
+    c = _xy(centre)
+    width = 0.42*r_major if width is None else width
+    out = []
+    for k in range(n):
+        a = angle + 360/n*k
+        h_out = np.degrees(np.arcsin(width/2/r_major))
+        h_in = np.degrees(np.arcsin(width/2/r_minor))
+        out += list(arc(c, r_major, a - h_out, a + h_out, 8))
+        out += list(arc(c, r_minor, a + h_in, a + 360/n - h_in, 14))
+    return np.array(out)
+
+
+def polygon_outline(centre, r, e, lobes=3, angle=90.0, n=300):
+    """Outline of a polygon shaft, ``r - e + e cos(lobes (theta - angle))``: the rounded
+    triangle (P3G) of polygon couplings for three lobes. ``r`` is the largest radius."""
+    c = _xy(centre)
+    th = np.linspace(0, 2*np.pi, n)
+    rad = r - e + e*np.cos(lobes*(th - np.radians(angle)))
+    return c + np.c_[rad*np.cos(th), rad*np.sin(th)]
+
+
+def annulus(ax, centre, r_in, r_out, a0=0.0, a1=360.0, facecolor=STEEL, edgecolor=EDGE,
+            hatch=None, zorder=2, **kwargs):
+    """A ring between ``r_in`` and ``r_out``, or the part of it from ``a0`` to ``a1`` degrees:
+    a hub, a tube or a bearing ring in section. ``hatch='////'`` marks a cut face."""
+    patch = Wedge(_xy(centre), r_out, a0, a1, width=r_out - r_in, facecolor=facecolor,
+                  edgecolor=edgecolor, lw=LW, hatch=hatch, zorder=zorder, **kwargs)
+    ax.add_patch(patch)
+    return patch
+
+
+def radial_load(ax, centre, r, angles, length, side="outside", color=LOAD, lw=1.3, ms=8,
+                zorder=6):
+    """A pressure on a circular surface of radius ``r``: one arrow per angle (degrees).
+
+    With ``side="outside"`` the arrows come from outside and end on the circle, pointing
+    at the centre: a pressure on a shaft. With ``side="inside"`` they start inside and end
+    on the circle, pointing outwards: a pressure in a bore. ``length`` is a number or one
+    length per angle, so a distribution such as ``p0*cos(theta)`` is drawn to scale;
+    arrows shorter than a hundredth of the longest are left out.
+    """
+    c = _xy(centre)
+    angles = np.atleast_1d(angles)
+    lengths = np.broadcast_to(np.asarray(length, float), angles.shape)
+    top = lengths.max()
+    for a, L in zip(angles, lengths):
+        if L < 0.01*top:
+            continue
+        u = polar(a)
+        tail = c + (r + L)*u if side == "outside" else c + (r - L)*u
+        arrow(ax, tail, c + r*u, color=color, lw=lw, ms=ms, zorder=zorder)
 
 
 def cog(ax, p, r=0.09, zorder=6):

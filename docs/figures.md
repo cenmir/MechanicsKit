@@ -57,6 +57,9 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `sk.trapezoid(ax, centre, w_bottom, w_top, h, angle)` | a wedge or a pad |
 | `sk.ellipse(ax, centre, w, h, angle)` | a disc or a wheel seen at an angle |
 | `sk.cog(ax, p, r)` | the centre-of-mass symbol, a quartered circle |
+| `sk.annulus(ax, centre, r_in, r_out, a0, a1, hatch)` | a ring or a ring segment: a hub, a tube, a bearing ring in section |
+| `sk.radial_load(ax, centre, r, angles, length, side)` | a pressure on a circle, arrows ending on it from outside (a shaft) or inside (a bore); `length` per angle draws a distribution |
+| `sk.spline_outline(centre, r_major, r_minor, n, width)` / `sk.polygon_outline(centre, r, e, lobes)` | a straight-sided spline shaft and a polygon (P3G) shaft in section, as points |
 | `sk.gear(ax, centre, N, module, angle)` / `sk.hub` | an involute spur gear, a hub |
 | `sk.force(ax, point, direction, length, text, head=False, offset=None)` | a force arrow; starts at `point`, or ends there with `head=True` |
 | `sk.moment_vector(ax, point, direction, length, text, head_gap)` | a moment or torque as a double-headed vector, right-hand rule; unambiguous from any side |
