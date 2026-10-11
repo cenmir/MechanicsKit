@@ -33,6 +33,17 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.17.0] - 2026-10-11
+
+### Added
+
+- `gears`: the load capacity of spur gears, the two lines of a load diagram
+  (belastningsdiagram): `flank_torque` (Hertz pressure at the pitch point, with
+  `elasticity_factor` Z_E and `zone_factor` Z_H as in ISO 6336-2), `root_torque` (Lewis
+  with a fillet stress concentration), `load_limit` (the smaller, and which governs),
+  `lewis_form_factor` from Shigley's Table 14-2, and `iso6336_normalised` for the
+  allowable stresses of normalised steel by hardness (ISO 6336-5).
+
 ## [0.16.2] - 2026-10-11
 
 ### Changed

@@ -46,6 +46,7 @@ from .truss import draw_truss, animate_truss, pin_support, roller_support
 from . import sketch
 from . import sketch_extra
 from . import fits
+from . import gears
 from .gaussint import gaussint
 from .colormap_utils import colorbar, cmap
 from .help import quick_ref
@@ -53,7 +54,7 @@ from .animation_utils import to_responsive_html
 from .markdown import md, Markdown
 
 # Version information
-__version__ = '0.16.2'
+__version__ = '0.17.0'
 
 def version():
     """
