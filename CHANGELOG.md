@@ -33,6 +33,15 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.16.0] - 2026-10-11
+
+### Added
+
+- `fits.PROCESSES` and `fits.processes(grade)`: the machining processes and the tolerance
+  grades they reach in normal production (a workshop rule of thumb, printing included),
+  and the processes that can make a given grade, cheapest first. A tolerance is only worth
+  asking for if the workshop can make it.
+
 ## [0.15.0] - 2026-10-11
 
 ### Added

@@ -35,3 +35,10 @@ def test_out_of_range():
         tolerance(7, 500)
     with pytest.raises(ValueError):
         limits('G7/h6', 20)
+
+
+def test_processes_coarsest_first():
+    from mechanicskit.fits import processes
+    assert processes(7)[0] == 'turning, boring'
+    assert processes(6)[0] == 'reaming, fine boring'
+    assert 'drilling' not in processes(8)

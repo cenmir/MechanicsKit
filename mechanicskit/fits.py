@@ -134,3 +134,23 @@ def kind(fit, d):
     """'clearance', 'transition' or 'interference'."""
     lo, hi = interference(fit, d)
     return 'clearance' if hi <= 0 else 'interference' if lo >= 0 else 'transition'
+
+
+# processes and the tolerance grades they reach in normal production: a rule of thumb from
+# workshop practice; a careful operator on a good machine does better, a worn machine worse
+PROCESSES = [
+    ('honing, lapping', 4, 5),
+    ('grinding', 5, 7),
+    ('reaming, fine boring', 6, 8),
+    ('turning, boring', 7, 11),
+    ('milling', 8, 11),
+    ('drilling', 10, 13),
+    ('fused-filament printing, as printed', 12, 14),
+]
+
+
+def processes(grade):
+    """The processes of PROCESSES that reach the tolerance grade ITgrade, coarsest first:
+    the cheapest way to make the part is the first one."""
+    ok = [(name, lo, hi) for name, lo, hi in PROCESSES if lo <= grade]
+    return [name for name, lo, hi in sorted(ok, key=lambda p: -p[1])]
