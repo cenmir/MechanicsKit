@@ -4,8 +4,8 @@ shafts, and the limits of size and the interference of a fit such as 60 H7/s6.
 All deviations are in micrometres, sizes in millimetres, for basic sizes up to 400 mm.
 The tolerance grades IT6 to IT11 and the fundamental deviations of the shaft letters c, d,
 f, g, h, k, n, p, s and u are those of Budynas and Nisbett, *Shigley's Mechanical
-Engineering Design*, Tables A-11 and A-12, which reproduce ISO 286-2. IT5, IT12, IT13 and
-the letter m are added from ISO 286. Holes are always class H (the hole-basis system):
+Engineering Design*, Tables A-11 and A-12, which reproduce ISO 286-2. IT4, IT5 and IT12 to
+IT14 and the letter m are added from ISO 286. Holes are always class H (the hole-basis system):
 the lower deviation is zero and the upper deviation the tolerance grade.
 
     >>> from mechanicskit.fits import limits, interference
@@ -19,7 +19,8 @@ from __future__ import annotations
 # upper limits of the size ranges for the tolerance grades: "over the previous, up to and
 # including this one", mm
 IT_TOP = [3, 6, 10, 18, 30, 50, 80, 120, 180, 250, 315, 400]
-IT = {5: [4, 5, 6, 8, 9, 11, 13, 15, 18, 20, 23, 25],
+IT = {4: [3, 4, 4, 5, 6, 7, 8, 10, 12, 14, 16, 18],
+      5: [4, 5, 6, 8, 9, 11, 13, 15, 18, 20, 23, 25],
       6: [6, 8, 9, 11, 13, 16, 19, 22, 25, 29, 32, 36],
       7: [10, 12, 15, 18, 21, 25, 30, 35, 40, 46, 52, 57],
       8: [14, 18, 22, 27, 33, 39, 46, 54, 63, 72, 81, 89],
@@ -27,7 +28,8 @@ IT = {5: [4, 5, 6, 8, 9, 11, 13, 15, 18, 20, 23, 25],
       10: [40, 48, 58, 70, 84, 100, 120, 140, 160, 185, 210, 230],
       11: [60, 75, 90, 110, 130, 160, 190, 220, 250, 290, 320, 360],
       12: [100, 120, 150, 180, 210, 250, 300, 350, 400, 460, 520, 570],
-      13: [140, 180, 220, 270, 330, 390, 460, 540, 630, 720, 810, 890]}
+      13: [140, 180, 220, 270, 330, 390, 460, 540, 630, 720, 810, 890],
+      14: [250, 300, 360, 430, 520, 620, 740, 870, 1000, 1150, 1300, 1400]}
 
 # the finer size ranges of the fundamental deviations, mm
 FD_TOP = [3, 6, 10, 14, 18, 24, 30, 40, 50, 65, 80, 100, 120, 140, 160, 180, 200, 225, 250,

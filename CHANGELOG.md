@@ -33,6 +33,12 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.16.1] - 2026-10-11
+
+### Fixed
+
+- `fits.tolerance` covers IT4 and IT14, the ends of the ranges in `fits.PROCESSES`.
+
 ## [0.16.0] - 2026-10-11
 
 ### Added
