@@ -33,6 +33,13 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.16.2] - 2026-10-11
+
+### Changed
+
+- `fits.PROCESSES` says which features each process makes, and `fits.processes(grade,
+  feature)` takes 'hole' or 'shaft': a reamer makes no shafts.
+
 ## [0.16.1] - 2026-10-11
 
 ### Fixed

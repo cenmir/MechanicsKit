@@ -40,12 +40,13 @@ def test_out_of_range():
 def test_processes_coarsest_first():
     from mechanicskit.fits import processes
     assert processes(7)[0] == 'turning, boring'
-    assert processes(6)[0] == 'reaming, fine boring'
+    assert processes(6, 'hole')[0] == 'reaming, fine boring'
+    assert processes(6, 'shaft')[0] == 'grinding'
     assert 'drilling' not in processes(8)
 
 
 def test_every_process_grade_is_tabulated():
     from mechanicskit.fits import PROCESSES
-    for _, lo, hi in PROCESSES:
+    for _, _, lo, hi in PROCESSES:
         assert tolerance(lo, 25) < tolerance(hi, 25)
     assert (tolerance(4, 25), tolerance(14, 25)) == (6, 520)

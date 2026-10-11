@@ -138,21 +138,24 @@ def kind(fit, d):
     return 'clearance' if hi <= 0 else 'interference' if lo >= 0 else 'transition'
 
 
-# processes and the tolerance grades they reach in normal production: a rule of thumb from
-# workshop practice; a careful operator on a good machine does better, a worn machine worse
+# processes, the features they make and the tolerance grades they reach in normal
+# production: a rule of thumb from workshop practice; a careful operator on a good machine
+# does better, a worn machine worse
 PROCESSES = [
-    ('honing, lapping', 4, 5),
-    ('grinding', 5, 7),
-    ('reaming, fine boring', 6, 8),
-    ('turning, boring', 7, 11),
-    ('milling', 8, 11),
-    ('drilling', 10, 13),
-    ('fused-filament printing, as printed', 12, 14),
+    ('honing, lapping', 'both', 4, 5),
+    ('grinding', 'both', 5, 7),
+    ('reaming, fine boring', 'hole', 6, 8),
+    ('turning, boring', 'both', 7, 11),
+    ('milling', 'both', 8, 11),
+    ('drilling', 'hole', 10, 13),
+    ('fused-filament printing, as printed', 'both', 12, 14),
 ]
 
 
-def processes(grade):
+def processes(grade, feature=None):
     """The processes of PROCESSES that reach the tolerance grade ITgrade, coarsest first:
-    the cheapest way to make the part is the first one."""
-    ok = [(name, lo, hi) for name, lo, hi in PROCESSES if lo <= grade]
-    return [name for name, lo, hi in sorted(ok, key=lambda p: -p[1])]
+    the cheapest way to make the part is the first one. `feature` 'hole' or 'shaft' leaves
+    out the processes that make only the other kind (a reamer makes no shafts)."""
+    ok = [(name, lo) for name, kind_, lo, hi in PROCESSES
+          if lo <= grade and (feature is None or kind_ in ('both', feature))]
+    return [name for name, lo in sorted(ok, key=lambda p: -p[1])]
