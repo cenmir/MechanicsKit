@@ -33,6 +33,16 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.19.0] - 2026-10-12
+
+### Added
+
+- `sketch_extra.hex_nut(ax, face, direction, e, m)`: a hex nut or bolt head seen from the
+  side, across the corners, drawn the way Mirza draws them: shaded from dark blue on top
+  (`NUT_STOPS`), the edges between the three visible faces at +-e/4, and the 30 degree
+  chamfer of the outer end as straight lines at the outline's corners and an arc where the
+  chamfer cone cuts each flat face.
+
 ## [0.18.1] - 2026-10-12
 
 ### Changed

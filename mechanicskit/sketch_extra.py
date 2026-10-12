@@ -41,6 +41,7 @@ from mechanicskit import sketch as sk
 STEEL_STOPS = ['#6f93a8', '#d6e6ef', '#f4f9fc', '#c3d8e5', '#7fa3b8']
 BRASS_STOPS = ['#9a7420', '#e3c66d', '#f6e5a4', '#d9b955', '#8f6a1a']
 TAN_STOPS = ['#a88a63', '#dcc39f', '#efe0c6', '#d3b88f', '#9d7f58']
+NUT_STOPS = ['#3f9fc2', '#86c3dc', '#cde7f3']     # a zinc-plated nut, dark on top
 DARK_STEEL_STOPS = ['#3f5f73', '#8fb0c4', '#c9dde8', '#86a7bb', '#4b6b80']
 # polished steel, as Mirza drew the hydraulic cylinder: (offset, colour) pairs
 CHROME_STOPS = [(0, '#92b1d8'), (0.09, '#92b1d8'), (0.18, '#e5eaf4'), (0.25, '#afc3df'),
@@ -165,6 +166,48 @@ def shaded_rect(ax, xy, w, h, stops=STEEL_STOPS, axis='y', **kwargs):
     pts = [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
     direction = (0, 1) if axis == 'y' else (1, 0)
     return shade(ax, pts, stops, direction, **kwargs)
+
+
+def hex_nut(ax, face, direction, e, m, stops=NUT_STOPS, edgecolor=sk.EDGE, lw=sk.LW,
+            zorder=4):
+    """A hex nut or bolt head seen from the side, across the corners.
+
+    ``face`` is the centre of the bearing face, on the bolt axis, and the nut stands
+    ``m`` from it along ``direction``. ``e`` is the width across the corners, so the
+    outline is ``e`` high and the edges between the three visible faces lie at
+    +-e/4. The outer end has the usual 30 degree chamfer down to the width across
+    the flats: straight lines at the outline's corners and, where the chamfer cone
+    cuts the flat faces, an arc on each face. Shaded with ``stops`` from top to
+    bottom. Returns the outline patch.
+    """
+    R = e/2
+    r_c = R*np.sqrt(3)/2                       # the chamfer ends at the width across flats
+    c = (R - r_c)*np.sqrt(3)                   # axial length of the chamfer at a corner
+    u = sk.unit(np.asarray(direction, float))
+    v = sk.normal(u)
+    if v[1] < 0 or (v[1] == 0 and v[0] < 0):    # across the axis, upwards: dark side on top
+        v = -v
+    f = np.asarray(face, float)
+
+    def P(a, b):
+        return f + a*u + b*v
+
+    outline = [P(0, -R), P(m - c, -R), P(m, -r_c), P(m, r_c), P(m - c, R), P(0, R)]
+    patch = shade(ax, outline, stops, -v, edgecolor=edgecolor, lw=lw, zorder=zorder)
+    # the chamfer cone r(a) = r_c + (m - a)/sqrt(3) meets each flat face where the
+    # face point's distance from the axis equals r(a)
+    corners = [R*np.array([np.cos(t), np.sin(t)]) for t in np.radians([-90, -30, 30, 90])]
+    for q0, q1 in zip(corners[:-1], corners[1:]):
+        t = np.linspace(0, 1, 40)
+        q = np.outer(1 - t, q0) + np.outer(t, q1)
+        a = m - np.sqrt(3)*(np.linalg.norm(q, axis=1) - r_c)
+        pts = np.array([P(ai, qi[1]) for ai, qi in zip(a, q)])
+        ax.plot(pts[:, 0], pts[:, 1], color=edgecolor, lw=lw, zorder=zorder + 0.02,
+                solid_capstyle='round')
+    for b in (-R/2, R/2):
+        pts = np.array([P(0, b), P(m - c, b)])
+        ax.plot(pts[:, 0], pts[:, 1], color=edgecolor, lw=lw, zorder=zorder + 0.02)
+    return patch
 
 
 # --- supports -----------------------------------------------------------------------

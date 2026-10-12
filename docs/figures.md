@@ -93,6 +93,7 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `shade(ax, pts, stops, direction)` | a polygon with a linear gradient along `direction` |
 | `shaded_bar(ax, p0, p1, width, stops)` | a round-ended bar shaded across its thickness, like a cylinder |
 | `shaded_rect(ax, xy, w, h, stops, axis)` | a rectangle shaded along x or y |
+| `hex_nut(ax, face, direction, e, m)` | a hex nut or bolt head from the side, across the corners: blue `NUT_STOPS` shading, face edges at ±e/4, 30° chamfer lines and arcs; the bolt end is a `sk.rounded_rect` under it |
 | `STEEL_STOPS`, `TAN_STOPS`, `BRASS_STOPS`, `DARK_STEEL_STOPS`, `CHROME_STOPS` | gradient stops: dark edge, light band, dark edge |
 | `vec(ax, p0, p1, color, text, offset)` | an arrow from p0 to p1 with a label at the head |
 | `dot(ax, p, ms)` | a black point |
