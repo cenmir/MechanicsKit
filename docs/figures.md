@@ -446,6 +446,54 @@ These were real errors, each caught after the figure was drawn:
 - Label offsets in a `Proj` figure are page offsets; `Proj.axes(..., offsets={k: (dx,
   dy)})` moves one axis letter.
 
+### Breadboard circuits
+
+`mechanicskit.breadboard` (import as `bb`) draws the circuits of the Mechatronics part the
+way Tinkercad Circuits shows them: a light grey board with dark square holes, flat
+colours, jumper wires with dark pin ends. The readers have never built a circuit and copy
+it from the picture hole by hole, so the picture must be the circuit: trace every strip
+before saving. `tools/mechatronics_bb_figures.py` in the book is the body of examples.
+
+```python
+fig, ax = bb.canvas((-3, 33), (-14, 33))           # one unit = 0.1 inch, 7.2 pt
+board = bb.Breadboard(ax, 'half')                  # or 'full' (63 columns)
+s = bb.lab_supply(ax, (0.5, 13), volts=5.0, amps=0.014)
+bb.lead(ax, s['+'], board.xy('a19'), 'red', d0=(0, -1), d1=(0, -1))
+bb.lead(ax, s['-'], board.xy('a14'), 'black', d0=(0, -1), d1=(0, -1))
+board.resistor('c19', 'c15', 220)                  # bands read from c19
+board.led('e15', 'e14', lit=1.0, body_dir=(0, -1)) # anode e15, body over the gap
+save_svg(fig, 'BB_led_resistor_supply.svg')
+```
+
+| Call | Draws |
+|---|---|
+| `bb.canvas(xlim, ylim, unit_pt=7.2)` | a figure in which one unit is `unit_pt` points; limits fixed, because wire widths and the printing on parts are sized in units |
+| `Breadboard(ax, size)`, `.hole('a12')`, `.rail('T+', 12)`, `.xy(spec)`, `.strip(name)`, `.highlight_strip(name)` | the board; hole names as printed, rails `T+`, `T-` (top: − outer, + inner), `B-`, `B+` (bottom: − inner, + outer); `'T+12'` in any hole argument; rail holes in groups of five (`.rail_cols`) |
+| `.led(anode, cathode, color, lit, body_dir)` / `bb.led(ax, ...)` | a 5 mm LED from the side: flat rim on the cathode side, kinked anode leg, glow for `lit` (0 to 1) |
+| `.resistor(h1, h2, ohms, tol)` / `bb.resistor_bands(ohms, tol)` | a resistor with its four colour bands, read from `h1` |
+| `.wire(h1, h2, color, route)` | a jumper: `'straight'`, `'hv'`, `'vh'`, `'arc'` (`height` to the left of travel, negative to the right), `via=` corners |
+| `.esp32(col)` / `bb.esp32_devkit(ax, origin, angle)` | the 30-pin DOIT ESP32 DevKit V1; on a full board its pins sit in rows b and j from column `col`, antenna left, USB right, so the right column (D23 ... GND, 3V3) has one free hole in row a |
+| `bb.lead(ax, start, hole, color, d0, d1)`, `bb.cable(...)` | an off-board test lead ending in a pin housing in the hole |
+| `bb.lab_supply(ax, xy, volts, amps, mode)` | the lab's bench supply (BASETech BT-305 style): red A and green V displays, C.C. and C.V. lamps, OUTPUT, CURRENT, VOLTAGE FINE and COARSE, terminals −, earth, + |
+| `bb.battery_9v(ax, xy, angle)`, `bb.usb_breakout(ax, xy)` | a 9 V battery with snap clip, a USB-C breakout with VBUS and GND |
+| `bb.multimeter(ax, xy, reading, unit, mode)`, `bb.probe(ax, tip, color, angle, jack=...)` | a handheld meter (dial at `mode`, jacks 10A, mA, COM, VΩ) and a probe touching `tip`, its cable to a jack |
+| `bb.callout(ax, text, target, xy)` | a note with a thin leader and a dot at the target |
+| `bb.esp32_pinout()`, `bb.led_pinout()` | stand-alone figures: every ESP32 pin by class with a legend; one LED large beside its symbol |
+
+Rules that the first set of figures taught:
+
+- **Electrically honest.** Each strip of five holes is one node. The red probe goes on the
+  higher potential, the black on the lower; an ammeter's probes go into the two holes a
+  removed part left.
+- **Leads come from the side they are attached.** A meter's jacks are at its bottom, so put
+  the meter where its cables can rise into the jacks from below; a cable laid across the
+  meter's face hides the dial. `slack=` on `probe` and `lead` deepens the curve.
+- **Text to be read is in points, printing on parts in units.** Callouts take `fontsize`
+  (11 at 7.2 pt per unit); the pin labels on the ESP32 are too small to read at board scale,
+  so name the pins a circuit uses with callouts.
+- **Displays show what the instrument would show.** The supply has three digits per
+  display, so 14 mA reads `0.01`.
+
 ### Drawings by others
 
 Some objects have no mechanical stand-in (a tractor, an aircraft seen from above). Use

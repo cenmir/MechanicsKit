@@ -33,6 +33,22 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.18.0] - 2026-10-11
+
+### Added
+
+- `breadboard`: breadboard circuits drawn the way Tinkercad Circuits shows them, for
+  readers who copy a circuit hole by hole. `canvas(xlim, ylim, unit_pt)` fixes one unit
+  to the 0.1 inch pitch; `Breadboard(ax, 'half' | 'full')` draws the board (rows a to j,
+  centre gap, rails `'T+'`, `'T-'`, `'B+'`, `'B-'`) with `hole('a12')`, `rail('T+', 12)`,
+  `xy(...)`, `strip(...)` and `highlight_strip(...)`, and places parts with their legs in
+  named holes: `led` (5 mm, flat on the cathode side, kinked anode leg, `lit` glow),
+  `resistor` (four bands from `resistor_bands(ohms, tol)`), `wire` (straight, `'hv'`,
+  `'vh'`, `'arc'`), `esp32` (a 30-pin DOIT ESP32 DevKit V1 straddling the gap). Off the
+  board: `lead`, `cable`, `lab_supply` (BASETech BT-305 style bench supply), `battery_9v`,
+  `usb_breakout`, `multimeter` (display, rotary dial, jacks) and `probe`, and `callout`.
+  Stand-alone figures `esp32_pinout()` (pins by class with a legend) and `led_pinout()`.
+
 ## [0.17.0] - 2026-10-11
 
 ### Added
