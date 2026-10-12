@@ -79,7 +79,7 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `sk.rotation(ax, centre, r, a0, a1)` | a green curved arrow; `a1 < a0` for clockwise |
 | `sk.curl(ax, centre, rx, ry, a0, a1, back_zorder=None)` | a curved arrow on an ellipse: a torque about a shaft seen from the side, or wrapping it with the back half hidden |
 | `sk.radius(ax, centre, r, deg, text, at)` | an arrow from the centre out to the radius |
-| `sk.leader(ax, point, start, text)` | an arrow in to an edge, labelled beyond its tail: a fillet radius |
+| `sk.leader(ax, point, start, text, stop)` | an arrow in to an edge, labelled beyond its tail: a fillet radius; `stop` ends the head short of a thin line |
 | `sk.label(ax, xy, text, color, fontsize, halo=None, bg=None, **text_kwargs)` | a label; see [Labels](#labels) for the outline and the box |
 | `sk.unit(v)`, `sk.normal(v)`, `sk.polar(deg, r)`, `sk.rot(deg)` | unit vector, left normal, the vector at an angle, the rotation matrix (degrees) |
 | `sk.arc(centre, r, a0, a1, n)`, `sk.ccw(pts)`, `sk.mirror_outline(top)`, `sk.outward(d, point, centre)` | arc points, an outline made anticlockwise, a turned part's outline from its upper half, the direction pointing out of a structure |

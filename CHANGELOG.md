@@ -33,6 +33,13 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.18.1] - 2026-10-12
+
+### Changed
+
+- `sketch.leader` takes `stop`: the head ends that far short of the point, so a leader
+  that points at a thin line (a reference line, a dashed line) does not cover it.
+
 ## [0.18.0] - 2026-10-11
 
 ### Added

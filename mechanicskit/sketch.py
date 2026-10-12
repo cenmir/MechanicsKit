@@ -817,13 +817,15 @@ def radius(ax, centre, r, deg, text=None, at=None, color="black", lw=0.9, ms=10,
 
 
 def leader(ax, point, start, text=None, gap=0.18, color=GREY, lw=0.8, ms=9, fontsize=12,
-           zorder=6):
+           zorder=6, stop=0.0):
     """A leader: an arrow from ``start`` in to ``point`` on an edge, labelled beyond its tail.
 
     The label sits ``gap`` past ``start`` on the line from ``point``, the way a
-    small radius or a fillet is called out.
+    small radius or a fillet is called out. ``stop`` ends the head that far short of
+    ``point``, so a leader that points at a thin line does not cover it.
     """
     p, q = _xy(point), _xy(start)
+    p = p + stop*_unit(q - p)
     arrow(ax, q, p, color=color, lw=lw, ms=ms, zorder=zorder)
     if text:
         label(ax, q + gap*_unit(q - p), text, fontsize=fontsize)
