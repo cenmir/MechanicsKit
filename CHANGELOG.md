@@ -33,6 +33,35 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.20.0] - 2026-10-13
+
+### Added
+
+- `sketch.ring_gear(ax, centre, N, module, angle, rim)`: an internal gear, the complement of
+  an external involute outline with addendum and dedendum swapped; a space is centred on +y.
+- `sketch.planet_angle(N_sun, N_planet, psi, sun_angle)`: the angle to give `gear` for a
+  planet at the polar angle psi so that it meshes with the sun (and the ring, when the
+  planets satisfy the assembly condition).
+- `sketch.gear` takes `warp`, a radial displacement dr(theta) of the outline (the bent
+  flexspline of a strain wave gear), and `hub_ratio=0` leaves out the hub;
+  `sketch.gear_outline` takes the addendum and dedendum `ha`, `hf`.
+
+### Fixed
+
+- `gear_outline` and `gear` documented a tooth on +x; it has always been on +y. The
+  docstrings now say so (the geometry is unchanged, so existing figures keep their angles).
+
+- `sketch_extra.bevel_section(ax, apex, axis, delta_deg, A0, b, m)`: the axial section of a
+  straight bevel gear for the bevel gear chapter. The tooth zone lies between the back and
+  front cones, normal to the pitch generator, with addendum and dedendum tapering to the
+  apex; the body under it runs to a bore. Returns the pitch, tip and root points at both
+  ends and the unit vectors along and normal to the pitch cone, for annotation.
+- `sketch_extra.out_of_plane(ax, p, r, into=True, color)`: a force normal to the page, a
+  circle with a cross (into the page) or a dot (out of it), in the force's colour.
+- `sketch_extra.circle_tangents(centre, r, point)`: the two points where lines from a
+  point touch a circle, left and right as seen from the point. Draws the free ends of a
+  brake band or a belt running from a drum to a lever or an anchor (brakes chapter).
+
 ## [0.19.0] - 2026-10-12
 
 ### Added

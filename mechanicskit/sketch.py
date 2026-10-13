@@ -27,7 +27,8 @@ from __future__ import annotations
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import patheffects
-from matplotlib.patches import Circle, FancyArrowPatch, Polygon, Wedge
+from matplotlib.patches import Circle, FancyArrowPatch, PathPatch, Polygon, Wedge
+from matplotlib.path import Path as MplPath
 
 from .truss import BODY, GROUND, EDGE, LOAD
 
@@ -40,7 +41,7 @@ __all__ = [
     "box", "rounded_rect", "trapezoid", "ellipse", "cog", "annulus", "radial_load", "spline_outline", "polygon_outline",
     "force", "moment_vector", "angle", "right_angle", "dimension", "axes", "triad", "guide", "centreline", "rotation",
     "curl", "radius", "leader", "arrow", "unit_vectors", "direction_line", "break_line",
-    "label", "gear_outline", "unit", "normal", "polar", "rot", "arc", "ccw",
+    "label", "gear_outline", "ring_gear", "planet_angle", "unit", "normal", "polar", "rot", "arc", "ccw",
     "mirror_outline", "outward",
 ]
 
@@ -490,16 +491,17 @@ def helix(ax, xc, r, y0, y1, lead, back=False, color=EDGE, lw=0.8, zorder=3):
                     ls=(0, (3, 2)), zorder=zorder - 0.5)
 
 
-def gear_outline(N, module=1.0, phi_deg=20.0, n_pts=120):
+def gear_outline(N, module=1.0, phi_deg=20.0, n_pts=120, ha=1.0, hf=1.25):
     """The closed outline of an involute spur gear, centred at the origin.
 
-    A tooth is centred on the positive x axis. Returns an (n, 2) array. Below
+    A tooth is centred on the positive y axis. Returns an (n, 2) array. Below
     the base circle the flank continues as a radial line, so the same curve
     serves gears with few teeth, whose root circle lies inside the base circle.
+    ``ha`` and ``hf`` are the addendum and dedendum in modules.
     """
     phi = np.radians(phi_deg)
     pr = module*N/2
-    br, tr, rr = pr*np.cos(phi), module*(N + 2)/2, pr - 1.25*module
+    br, tr, rr = pr*np.cos(phi), pr + ha*module, pr - hf*module
     t_tip = np.sqrt((tr/br)**2 - 1)
 
     v = np.linspace(-1, 1, n_pts)*t_tip
@@ -540,21 +542,71 @@ def gear_outline(N, module=1.0, phi_deg=20.0, n_pts=120):
 
 
 def gear(ax, centre, N, module=1.0, angle=0.0, phi_deg=20.0, facecolor=STEEL,
-         edgecolor=STEEL_EDGE, zorder=2, hub_ratio=0.18):
+         edgecolor=STEEL_EDGE, zorder=2, hub_ratio=0.18, warp=None):
     """A spur gear with ``N`` teeth, turned by ``angle`` degrees, with a hub.
 
-    The pitch radius is ``module*N/2``; two gears mesh when their centres are
-    that far apart in sum and one of them is turned by half a tooth.
+    The pitch radius is ``module*N/2``; at ``angle=0`` a tooth points along +y.
+    Two gears mesh when their centres are that far apart in sum and the tooth of
+    one faces a space of the other along the line of centres. ``warp``
+    is a function dr(theta) of the polar angle in the figure (radians) that
+    moves every point of the outline outwards by dr: the flexspline of a strain
+    wave gear, bent into an ellipse, is ``lambda t: w0*np.cos(2*(t - psi))``.
+    ``hub_ratio=0`` leaves out the hub.
     """
     c = _xy(centre)
     t = np.radians(angle)
     R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])
-    pts = gear_outline(N, module, phi_deg) @ R.T + c
-    patch = Polygon(pts, closed=True, facecolor=facecolor, edgecolor=edgecolor,
+    pts = gear_outline(N, module, phi_deg) @ R.T
+    if warp is not None:
+        th = np.arctan2(pts[:, 1], pts[:, 0])
+        pts = pts*(1 + warp(th)/np.hypot(pts[:, 0], pts[:, 1]))[:, None]
+    patch = Polygon(pts + c, closed=True, facecolor=facecolor, edgecolor=edgecolor,
                     lw=LW, zorder=zorder)
     ax.add_patch(patch)
-    hub(ax, c, hub_ratio*module*N/2, zorder=zorder + 1)
+    if hub_ratio > 0:
+        hub(ax, c, hub_ratio*module*N/2, zorder=zorder + 1)
     return patch
+
+
+def ring_gear(ax, centre, N, module=1.0, angle=0.0, rim=3.0, phi_deg=20.0,
+              facecolor=STEEL, edgecolor=STEEL_EDGE, zorder=2):
+    """An internal (ring) gear with ``N`` teeth, turned by ``angle`` degrees.
+
+    The tooth space is the shape of an external involute tooth with the addendum
+    and dedendum swapped, so the tips lie at ``module*(N/2 - 1)`` and the roots at
+    ``module*(N/2 + 1.25)``; at ``angle=0`` a space is centred on the positive y
+    axis, so a pinion with a tooth pointing there meshes with it. ``rim`` is the
+    thickness outside the roots, in modules. A planet of N_p teeth meshes inside
+    it when its centre lies ``module*(N - N_p)/2`` from the ring's.
+    """
+    c = _xy(centre)
+    t = np.radians(angle)
+    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])
+    hole = gear_outline(N, module, phi_deg, ha=1.25, hf=1.0) @ R.T + c
+    r_out = module*(N/2 + 1.25 + rim)
+    a = np.linspace(0, 2*np.pi, 241)
+    outer = c + r_out*np.c_[np.cos(a), np.sin(a)]
+    verts = np.vstack([outer, outer[:1], hole[::-1], hole[-1:]])
+    codes = ([MplPath.MOVETO] + [MplPath.LINETO]*(len(outer) - 1) + [MplPath.CLOSEPOLY]
+             + [MplPath.MOVETO] + [MplPath.LINETO]*(len(hole) - 1) + [MplPath.CLOSEPOLY])
+    patch = PathPatch(MplPath(verts, codes), facecolor=facecolor, edgecolor=edgecolor,
+                      lw=LW, zorder=zorder)
+    ax.add_patch(patch)
+    return patch
+
+
+def planet_angle(N_sun, N_planet, psi, sun_angle=0.0):
+    """The angle (degrees) to give ``gear`` for a planet whose centre lies at the polar
+    angle ``psi`` (degrees) from a sun turned by ``sun_angle``, so that they mesh.
+
+    A space of the planet faces the sun's tooth phase along the line of centres; the tooth
+    phases run in opposite senses at an external mesh. If the planets of a ring gear of
+    N_ring teeth are spaced so that (N_sun + N_ring)/K is whole, the same angle meshes
+    with ``ring_gear`` at ``angle=0`` as well.
+    """
+    f_s = N_sun*np.radians(psi - 90.0 - sun_angle)/(2*np.pi)          # sun tooth phase towards psi
+    th = np.radians(psi + 180.0 - 90.0) - 2*np.pi*(0.5 - f_s)/N_planet
+    return np.degrees(th)
 
 
 def hub(ax, centre, r, zorder=3):

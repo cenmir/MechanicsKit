@@ -828,3 +828,91 @@ def save_svg(fig, path, tight=True, pad_inches=0.04):
                             separators=(',', ':'))
     tree.write(path, xml_declaration=True, encoding='utf-8')
     print('wrote', path)
+
+
+def bevel_section(ax, apex, axis, delta_deg, A0, b, m, ha=1.0, hf=1.25, depth=1.5,
+                  bore=None, sides=(1, -1), facecolor=sk.STEEL, edgecolor=sk.EDGE,
+                  lw=sk.LW, zorder=2):
+    """The axial section of a straight bevel gear: the plane through its axis.
+
+    The pitch cone has its apex at ``apex`` (2D) and its axis along ``axis``, the direction
+    from the apex into the gear. Its generators leave the apex at ``delta_deg`` to the axis;
+    along each the teeth run from the cone distance ``A0 - b`` (the front, or toe) to ``A0``
+    (the back, or heel), with the addendum ``ha*m`` and dedendum ``hf*m`` at the back and
+    tapering towards the apex, so tip and root lines also run to the apex. The tooth zone is
+    bounded by the back cone and the front cone, both normal to the pitch generator. Under
+    the root the body goes ``depth*m`` further along the back cone, then square to the axis
+    down to the bore radius ``bore/2`` (to the axis if ``bore`` is None) and back along it to
+    the front. ``sides`` draws the half above (1) and below (-1) the axis, as seen walking
+    from the apex along ``axis``: +1 is on the left.
+
+    Returns, per side, a dict of 2D points: 'pitch_back', 'pitch_front', 'tip_back',
+    'tip_front', 'root_back', 'root_front', and the unit vectors 'g' (pitch generator from
+    the apex) and 'n' (normal to the pitch cone, away from the axis).
+    """
+    O = np.asarray(apex, float)
+    a = np.asarray(axis, float)
+    a = a/np.linalg.norm(a)
+    d = np.radians(delta_deg)
+    k = (A0 - b)/A0
+    r_bore = 0.0 if bore is None else bore/2
+    out = {}
+    for s in sides:
+        e_r = s*np.array([-a[1], a[0]])                          # radial, on this side
+        g = np.cos(d)*a + np.sin(d)*e_r
+        n = -np.sin(d)*a + np.cos(d)*e_r
+        P0, P1 = O + A0*g, O + (A0 - b)*g
+        pts = {'pitch_back': P0, 'pitch_front': P1,
+               'tip_back': P0 + ha*m*n, 'tip_front': P1 + k*ha*m*n,
+               'root_back': P0 - hf*m*n, 'root_front': P1 - k*hf*m*n, 'g': g, 'n': n}
+        tooth = [pts['root_front'], pts['root_back'], pts['tip_back'], pts['tip_front']]
+        ax.add_patch(Polygon(tooth, closed=True, facecolor=facecolor, edgecolor=edgecolor,
+                             lw=lw, zorder=zorder))
+        low_b = pts['root_back'] - depth*m*n
+        low_f = pts['root_front'] - k*depth*m*n
+        def drop(p):                                              # square to the axis, to the bore
+            return O + ((p - O) @ a)*a + r_bore*e_r
+        body = [pts['root_front'], pts['root_back'], low_b, drop(low_b), drop(low_f), low_f]
+        ax.add_patch(Polygon(body, closed=True, facecolor=facecolor, edgecolor=edgecolor,
+                             lw=lw, zorder=zorder - 0.05))
+        out[s] = pts
+    return out
+
+
+def circle_tangents(centre, r, point):
+    """The two points where lines from ``point`` touch the circle (``centre``, ``r``).
+
+    A band or a belt leaving a drum towards an anchor or a lever runs along such a
+    tangent. Returns ``(left, right)``: the touching points seen from ``point``
+    looking at the centre, the first on the left of that line, the second on its
+    right. ``point`` must lie outside the circle.
+    """
+    c, p = np.asarray(centre, float), np.asarray(point, float)
+    d = p - c
+    dist = np.linalg.norm(d)
+    if dist <= r:
+        raise ValueError('point lies inside the circle')
+    base = np.arctan2(d[1], d[0])
+    off = np.arccos(r/dist)
+    q1 = c + r*np.array([np.cos(base + off), np.sin(base + off)])
+    q2 = c + r*np.array([np.cos(base - off), np.sin(base - off)])
+    # seen from p looking at c, which of the two lies on the left
+    look = c - p
+    left_first = look[0]*(q1 - p)[1] - look[1]*(q1 - p)[0] > 0
+    return (q1, q2) if left_first else (q2, q1)
+
+
+def out_of_plane(ax, p, r, into=True, color=sk.LOAD, lw=1.6, zorder=6):
+    """A force or velocity normal to the page at ``p``: a circle of radius ``r`` (data
+    units) with a cross (``into=True``, the tail of an arrow going into the page) or a dot
+    (``into=False``, the head of an arrow coming out). Label it with ``sk.label`` in the
+    same colour."""
+    c = np.asarray(p, float)
+    ax.add_patch(Circle(c, r, facecolor='white', edgecolor=color, lw=lw, zorder=zorder))
+    if into:
+        k = r/np.sqrt(2)
+        for s in (1, -1):
+            ax.plot([c[0] - k, c[0] + k], [c[1] - s*k, c[1] + s*k], color=color, lw=lw,
+                    solid_capstyle='round', zorder=zorder + 0.1)
+    else:
+        ax.add_patch(Circle(c, 0.28*r, facecolor=color, edgecolor='none', zorder=zorder + 0.1))

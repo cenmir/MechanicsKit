@@ -94,6 +94,10 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `shaded_bar(ax, p0, p1, width, stops)` | a round-ended bar shaded across its thickness, like a cylinder |
 | `shaded_rect(ax, xy, w, h, stops, axis)` | a rectangle shaded along x or y |
 | `hex_nut(ax, face, direction, e, m)` | a hex nut or bolt head from the side, across the corners: blue `NUT_STOPS` shading, face edges at ±e/4, 30° chamfer lines and arcs; the bolt end is a `sk.rounded_rect` under it |
+| `sk.ring_gear(ax, c, N, m, angle, rim)` | an internal gear; a space on +y at angle 0 |
+| `sk.planet_angle(N_s, N_p, psi, sun_angle)` | the angle that meshes a planet at psi with the sun; `sk.gear(..., warp=f)` bends a gear (flexspline) |
+| `bevel_section(ax, apex, axis, delta_deg, A0, b, m)` | a straight bevel gear cut through its axis: tooth zone between the back and front cones with tip and root lines running to the apex, the body under it; returns the pitch, tip and root points and the generator and normal per side |
+| `out_of_plane(ax, p, r, into=True, color)` | a force or velocity normal to the page: a circle with a cross (into the page) or a dot (out of it) |
 | `STEEL_STOPS`, `TAN_STOPS`, `BRASS_STOPS`, `DARK_STEEL_STOPS`, `CHROME_STOPS` | gradient stops: dark edge, light band, dark edge |
 | `vec(ax, p0, p1, color, text, offset)` | an arrow from p0 to p1 with a label at the head |
 | `dot(ax, p, ms)` | a black point |
@@ -103,6 +107,7 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `Proj(ex, ey, ez)`, `Proj.from_view(d, up)` | a fixed axonometric projection for 3D figures, given by the page images of the unit vectors or by a viewing direction, with `.axes`, `.force` and `.arc` |
 | `tone(base, normal, light)` | a face colour lit from `light`, for shaded 3D faces |
 | `vcylinder`, `rod3d`, `sphere`, `box3d`, `thread3d`, `ring`, `speckle` | 3D solids for `Proj` figures |
+| `circle_tangents(centre, r, point)` | the two points where lines from `point` touch a circle, left and right seen from the point: the free ends of a brake band or a belt |
 | `embed_svg`, `embed_svg_at`, `data_to_svg` | paste a licensed SVG drawing into a saved figure |
 | `SVG_GRADIENTS` | `True`: real SVG gradients; set `False` for raster output (animations), which builds them from strips |
 
