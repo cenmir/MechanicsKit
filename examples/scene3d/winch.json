@@ -1,7 +1,7 @@
 {
  "name": "winch",
  "units": "mm",
- "comment": "Meriam & Kraige winch: 40 kg on a 250 mm drum radius, held by P on a 400 mm crank. Shaft axis is x, z is up, the viewer sits on the -y side.",
+ "comment": "Hand winch: 40 kg on a 250 mm drum radius, held by P on a 400 mm crank. Shaft axis is x, z is up, the viewer sits on the -y side.",
  "params": {
   "r_rope": 250,
   "d_rope": 16,

@@ -1,0 +1,381 @@
+{
+ "name": "hinged_plate",
+ "units": "mm",
+ "comment": "Hinged plate (from a hand sketch). Plate B, a by b, is hinged along its left edge to a fixed beam. A wire from the far right corner C runs over a snatch block at height h above the plate and carries the weight A. The rope leaves C on the tangent to the sheave and hangs vertically on the far side; the sheave turns into the plane of the rope. Sizes are estimates.",
+ "params": {
+  "a": 380,
+  "b": 600,
+  "t": 14,
+  "h": 430,
+  "dx": 190,
+  "dy": 70,
+  "R": 38,
+  "r_rope": 2.5,
+  "L_hang": 170
+ },
+ "derived": {
+  "Cc": "vec(a, b, t)",
+  "Pc": "vec(a + dx, b + dy, t + h)",
+  "dh0": "vec(Cc[0] - Pc[0], Cc[1] - Pc[1], 0)",
+  "D": "norm(dh0)",
+  "dh": "dh0/D",
+  "n": "cross(dh, vec(0, 0, 1))",
+  "al": "arctan2(-h, D)",
+  "be": "arccos(R/sqrt(D**2 + h**2))",
+  "Hp": "Pc - R*dh",
+  "Wt": "Hp - vec(0, 0, L_hang)",
+  "rope": "[Cc] + [Pc + R*(cos(s)*dh + sin(s)*vec(0, 0, 1)) for s in linspace(al + be, pi, 9)] + [Wt]"
+ },
+ "parts": [
+  {
+   "id": "beam",
+   "kind": "box",
+   "color": "#9c8876",
+   "args": {
+    "lo": [
+     -48,
+     -30,
+     -36
+    ],
+    "hi": [
+     -14,
+     "b + 30",
+     0
+    ]
+   }
+  },
+  {
+   "id": "plate",
+   "kind": "box",
+   "color": "#d8ba94",
+   "args": {
+    "lo": [
+     0,
+     0,
+     0
+    ],
+    "hi": [
+     "a",
+     "b",
+     "t"
+    ]
+   }
+  },
+  {
+   "id": "hinge1_knuckle",
+   "kind": "rod",
+   "color": "#bcd4e3",
+   "args": {
+    "p0": [
+     -7,
+     20,
+     "t/2"
+    ],
+    "p1": [
+     -7,
+     90,
+     "t/2"
+    ],
+    "r": 8
+   }
+  },
+  {
+   "id": "hinge1_leaf",
+   "kind": "box",
+   "color": "#bcd4e3",
+   "args": {
+    "lo": [
+     -7,
+     22,
+     "t"
+    ],
+    "hi": [
+     40,
+     88,
+     "t + 2"
+    ]
+   }
+  },
+  {
+   "id": "hinge1_base",
+   "kind": "box",
+   "color": "#bcd4e3",
+   "args": {
+    "lo": [
+     -44,
+     22,
+     0
+    ],
+    "hi": [
+     -7,
+     88,
+     2
+    ]
+   }
+  },
+  {
+   "id": "hinge2_knuckle",
+   "kind": "rod",
+   "color": "#bcd4e3",
+   "args": {
+    "p0": [
+     -7,
+     "b - 90",
+     "t/2"
+    ],
+    "p1": [
+     -7,
+     "b - 20",
+     "t/2"
+    ],
+    "r": 8
+   }
+  },
+  {
+   "id": "hinge2_leaf",
+   "kind": "box",
+   "color": "#bcd4e3",
+   "args": {
+    "lo": [
+     -7,
+     "b - 88",
+     "t"
+    ],
+    "hi": [
+     40,
+     "b - 22",
+     "t + 2"
+    ]
+   }
+  },
+  {
+   "id": "hinge2_base",
+   "kind": "box",
+   "color": "#bcd4e3",
+   "args": {
+    "lo": [
+     -44,
+     "b - 88",
+     0
+    ],
+    "hi": [
+     -7,
+     "b - 22",
+     2
+    ]
+   }
+  },
+  {
+   "id": "eye",
+   "kind": "knob",
+   "color": "#bcd4e3",
+   "args": {
+    "p": "Cc - vec(0, 0, 1)",
+    "dir": [
+     0,
+     0,
+     1
+    ],
+    "r": 6,
+    "L": 4
+   }
+  },
+  {
+   "id": "rope",
+   "kind": "wire",
+   "color": "#c9c9c9",
+   "args": {
+    "points": "rope",
+    "r": "r_rope"
+   }
+  },
+  {
+   "id": "sheave",
+   "kind": "rod",
+   "color": "#bcd4e3",
+   "args": {
+    "p0": "Pc - 6*n",
+    "p1": "Pc + 6*n",
+    "r": "R + 2"
+   }
+  },
+  {
+   "id": "cheek1",
+   "kind": "rod",
+   "color": "#9fbdd0",
+   "args": {
+    "p0": "Pc + 7*n",
+    "p1": "Pc + 11*n",
+    "r": "R + 14"
+   }
+  },
+  {
+   "id": "cheek2",
+   "kind": "rod",
+   "color": "#9fbdd0",
+   "args": {
+    "p0": "Pc - 11*n",
+    "p1": "Pc - 7*n",
+    "r": "R + 14"
+   }
+  },
+  {
+   "id": "axle",
+   "kind": "rod",
+   "color": "#7f9fb3",
+   "args": {
+    "p0": "Pc - 15*n",
+    "p1": "Pc + 15*n",
+    "r": 7
+   }
+  },
+  {
+   "id": "hook",
+   "kind": "rod",
+   "color": "#9fbdd0",
+   "args": {
+    "p0": "Pc + vec(0, 0, R + 10)",
+    "p1": "Pc + vec(0, 0, R + 80)",
+    "r": 5
+   }
+  },
+  {
+   "id": "ceiling",
+   "kind": "box",
+   "color": "#9c8876",
+   "args": {
+    "lo": "Pc + vec(-70, -70, R + 80)",
+    "hi": "Pc + vec(70, 70, R + 98)"
+   }
+  },
+  {
+   "id": "weight",
+   "kind": "rod",
+   "color": "#e3b9a0",
+   "args": {
+    "p0": "Wt",
+    "p1": "Wt - vec(0, 0, 110)",
+    "r": 48
+   }
+  }
+ ],
+ "annotations": [
+  {
+   "kind": "dim",
+   "id": "a",
+   "p0": [
+    0,
+    0,
+    0
+   ],
+   "p1": [
+    "a",
+    0,
+    0
+   ],
+   "offset": [
+    0,
+    -1,
+    0
+   ],
+   "dist": 55,
+   "text": "$a$"
+  },
+  {
+   "kind": "dim",
+   "id": "b",
+   "p0": [
+    "a",
+    0,
+    0
+   ],
+   "p1": [
+    "a",
+    "b",
+    0
+   ],
+   "offset": [
+    1,
+    0,
+    0
+   ],
+   "dist": 55,
+   "text": "$b$"
+  },
+  {
+   "kind": "line",
+   "id": "plate_level",
+   "p0": "Cc",
+   "p1": "vec(Hp[0], Hp[1], t) - 70*dh",
+   "style": "dashed"
+  },
+  {
+   "kind": "dim",
+   "id": "h",
+   "p0": "vec(Hp[0], Hp[1], t) - 70*dh",
+   "p1": "vec(Hp[0], Hp[1], Pc[2]) - 70*dh",
+   "offset": "-dh",
+   "dist": 0.001,
+   "text": "$h$",
+   "text_gap": 16
+  },
+  {
+   "kind": "line",
+   "id": "axle_level",
+   "p0": "Pc - (R + 18)*dh",
+   "p1": "vec(Hp[0], Hp[1], Pc[2]) - 85*dh",
+   "style": "dashed"
+  },
+  {
+   "kind": "point",
+   "id": "C",
+   "at": "Cc + vec(0, 0, 4)",
+   "ms": 4,
+   "text": "$C$",
+   "screen_offset": [
+    -22,
+    14
+   ]
+  },
+  {
+   "kind": "label",
+   "id": "B",
+   "at": "vec(a/2, b/2, t)",
+   "text": "$B$"
+  },
+  {
+   "kind": "label",
+   "id": "A",
+   "at": "Wt - vec(0, 0, 55) - 48*n",
+   "text": "$A$",
+   "screen_offset": [
+    0,
+    0
+   ]
+  }
+ ],
+ "cameras": [
+  {
+   "az": 20,
+   "el": 35
+  },
+  {
+   "az": 25,
+   "el": 38
+  },
+  {
+   "az": 32,
+   "el": 40
+  }
+ ],
+ "light": [
+  -0.25,
+  0.45,
+  0.85
+ ],
+ "checks": {},
+ "pick": {
+  "az": 25,
+  "el": 38
+ }
+}

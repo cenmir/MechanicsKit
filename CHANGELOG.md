@@ -33,6 +33,39 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.22.0] - 2026-10-13
+
+### Added
+- `scene3d` primitives `motor`, `table` (plate with a slot) and `half_disc` (miter gauge);
+  annotation kinds `arc` (rotation arrow in any plane) and `line` (centre and extension
+  lines); the check `bbox_expect` (a part's bounding box against parameter expressions).
+- `scene3d.show`, `watch` and `export_step`, and the CLI options `--show`, `--watch`
+  (OCP CAD Viewer, live redraw on save) and `--step FILE`.
+- `scene3d.viewer_camera`, `render_view` and the CLI option `--from-viewer`: render the
+  figure from the CAD viewer's current view and print its az/el for the spec.
+- Console command `scene3d` (same as `python -m mechanicskit.scene3d`); the spec argument
+  is optional and defaults to the last spec used.
+- `scene3d --setup-vscode [FOLDER]` (`scene3d.setup_vscode`): adds three tasks on the open
+  spec (watch in viewer, render this view, render all cameras) to a VS Code workspace, puts
+  them on the status bar as buttons, and installs the OCP CAD Viewer and Task Buttons
+  extensions when the `code` command is available.
+- `scene3d` spec `derived` section: named values and vectors computed in order from the
+  parameters, so a spec carries the problem's kinematics; expressions gain trig, `vec`,
+  `cross`, `norm`, `linspace`, list comprehensions, and evaluation inside dicts.
+- `scene3d` primitives `plate` (rounded corners, holes, arc slots), `bar_link`, `wire` and
+  `knob`; annotations `point`, `cog`, `triad`, and the `angle` role for `arc`.
+- `scene3d` check `labels_far_from_anchor_pt`: a label more than 14 pt from the point or
+  arc it names.
+- `scene3d.spec_path` / `load_spec`: a path into a render folder (report.json, a candidate
+  image) resolves to the spec beside it; anything else gives a one-line error.
+- Examples `disk_sander`, `motor_spring` (Fusion 360 model), `tv_mount` and `wall_shelf`
+  (photographs), `hinged_plate` (hand sketch), and a gallery in `docs/scene3d.qmd`.
+
+### Fixed
+- The occlusion check skipped every sample within 3 mm of a solid, so arrows drawn on a
+  face were never checked; it now skips only samples strictly inside a solid. `line`
+  annotations are checked too, except dash-dot centre lines.
+
 ## [0.21.0] - 2026-10-13
 
 ### Added
@@ -46,7 +79,7 @@ decide patch vs. minor before pushing.
   `python -m mechanicskit.scene3d spec.json`. New optional extra
   `mechanicskit[cad]` (build123d); `scene3d` is not imported by `mechanicskit`
   itself, so the base install stays light.
-- `examples/scene3d/winch.json`: the Meriam & Kraige winch as a worked spec.
+- `examples/scene3d/winch.json`: a hand winch as a worked spec.
 - `docs/scene3d.qmd` (PDF): how the pipeline works and how to use it.
 
 ### Changed

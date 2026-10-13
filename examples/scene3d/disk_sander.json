@@ -1,0 +1,486 @@
+{
+ "name": "disk_sander",
+ "units": "mm",
+ "comment": "A thin board pressed by P against a disk sander of radius R; the board end spans R/4 to 3R/4 along the horizontal radius. Shaft axis is x (motor at -x, sanding face at x = 0 facing +x), z is up, the viewer sits on the -y side.",
+ "params": {
+  "R": 150,
+  "t_disk": 22,
+  "t_board": 10,
+  "L_board": 380,
+  "z_base": -170,
+  "x_table": 12,
+  "L_table": 440,
+  "t_table": 34
+ },
+ "parts": [
+  {
+   "id": "base",
+   "kind": "box",
+   "color": "wood",
+   "args": {
+    "lo": [
+     -400,
+     -280,
+     "z_base - 110"
+    ],
+    "hi": [
+     "x_table + L_table + 20",
+     220,
+     "z_base"
+    ]
+   }
+  },
+  {
+   "id": "motor",
+   "kind": "motor",
+   "color": "table",
+   "args": {
+    "x0": -380,
+    "x1": -140,
+    "r": 110,
+    "z_base": "z_base",
+    "foot_half_w": 70,
+    "flange_half_w": 150,
+    "t_flange": 22
+   }
+  },
+  {
+   "id": "shaft",
+   "kind": "rod",
+   "color": "steel",
+   "args": {
+    "p0": [
+     -140,
+     0,
+     0
+    ],
+    "p1": [
+     "-t_disk",
+     0,
+     0
+    ],
+    "r": 15
+   }
+  },
+  {
+   "id": "disk_hub",
+   "kind": "rod",
+   "color": "steel",
+   "args": {
+    "p0": [
+     "-t_disk - 18",
+     0,
+     0
+    ],
+    "p1": [
+     "-t_disk",
+     0,
+     0
+    ],
+    "r": 32
+   }
+  },
+  {
+   "id": "disk",
+   "kind": "rod",
+   "color": "sand",
+   "args": {
+    "p0": [
+     "-t_disk",
+     0,
+     0
+    ],
+    "p1": [
+     0,
+     0,
+     0
+    ],
+    "r": "R"
+   }
+  },
+  {
+   "id": "table",
+   "kind": "table",
+   "color": "table",
+   "args": {
+    "lo": [
+     "x_table",
+     -230,
+     "-t_board/2 - t_table"
+    ],
+    "hi": [
+     "x_table + L_table",
+     160,
+     "-t_board/2"
+    ],
+    "slot_x": 150,
+    "slot_w": 18,
+    "slot_d": 12
+   }
+  },
+  {
+   "id": "leg1",
+   "kind": "box",
+   "color": "block",
+   "args": {
+    "lo": [
+     "x_table + 30",
+     -200,
+     "z_base"
+    ],
+    "hi": [
+     "x_table + 80",
+     -150,
+     "-t_board/2 - t_table"
+    ]
+   }
+  },
+  {
+   "id": "leg2",
+   "kind": "box",
+   "color": "block",
+   "args": {
+    "lo": [
+     "x_table + L_table - 80",
+     -200,
+     "z_base"
+    ],
+    "hi": [
+     "x_table + L_table - 30",
+     -150,
+     "-t_board/2 - t_table"
+    ]
+   }
+  },
+  {
+   "id": "leg3",
+   "kind": "box",
+   "color": "block",
+   "args": {
+    "lo": [
+     "x_table + 30",
+     90,
+     "z_base"
+    ],
+    "hi": [
+     "x_table + 80",
+     140,
+     "-t_board/2 - t_table"
+    ]
+   }
+  },
+  {
+   "id": "leg4",
+   "kind": "box",
+   "color": "block",
+   "args": {
+    "lo": [
+     "x_table + L_table - 80",
+     90,
+     "z_base"
+    ],
+    "hi": [
+     "x_table + L_table - 30",
+     140,
+     "-t_board/2 - t_table"
+    ]
+   }
+  },
+  {
+   "id": "board",
+   "kind": "box",
+   "color": "wood",
+   "args": {
+    "lo": [
+     0,
+     "-3*R/4",
+     "-t_board/2"
+    ],
+    "hi": [
+     "L_board",
+     "-R/4",
+     "t_board/2"
+    ]
+   }
+  },
+  {
+   "id": "gauge",
+   "kind": "half_disc",
+   "color": "steel",
+   "args": {
+    "centre": [
+     150,
+     "-R/4",
+     "-t_board/2"
+    ],
+    "r": 55,
+    "t": 8,
+    "facing": [
+     0,
+     -1,
+     0
+    ],
+    "bar": [
+     150,
+     14
+    ]
+   }
+  }
+ ],
+ "annotations": [
+  {
+   "kind": "line",
+   "id": "axis",
+   "p0": [
+    215,
+    0,
+    "-t_board/2"
+   ],
+   "p1": [
+    "x_table + L_table + 120",
+    0,
+    "-t_board/2"
+   ],
+   "style": "centre"
+  },
+  {
+   "kind": "force",
+   "id": "P",
+   "at": [
+    "L_board/2 - 20",
+    "-R/2",
+    "t_board/2 + 1"
+   ],
+   "dir": [
+    -1,
+    0,
+    0
+   ],
+   "length": 120,
+   "text": "$P$",
+   "head": true,
+   "screen_offset": [
+    26,
+    4
+   ]
+  },
+  {
+   "kind": "radius",
+   "id": "R",
+   "centre": [
+    0,
+    0,
+    0
+   ],
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "r": "R",
+   "angle_deg": 215,
+   "r0": 36,
+   "text": "$R$",
+   "text_gap": 0,
+   "screen_offset": [
+    14,
+    18
+   ]
+  },
+  {
+   "kind": "arc",
+   "id": "omega",
+   "centre": [
+    0,
+    0,
+    0
+   ],
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "r": "0.78*R",
+   "a0": -80,
+   "a1": -25
+  },
+  {
+   "kind": "line",
+   "id": "ext0",
+   "p0": [
+    "L_board + 10",
+    0,
+    "-t_board/2"
+   ],
+   "p1": [
+    "x_table + L_table + 120",
+    0,
+    "-t_board/2"
+   ],
+   "style": "solid",
+   "lw": 0.6
+  },
+  {
+   "kind": "line",
+   "id": "ext1",
+   "p0": [
+    "L_board + 10",
+    "-R/4",
+    "-t_board/2"
+   ],
+   "p1": [
+    "x_table + L_table + 120",
+    "-R/4",
+    "-t_board/2"
+   ],
+   "style": "solid",
+   "lw": 0.6
+  },
+  {
+   "kind": "line",
+   "id": "ext2",
+   "p0": [
+    "L_board + 10",
+    "-3*R/4",
+    "-t_board/2"
+   ],
+   "p1": [
+    "x_table + L_table + 120",
+    "-3*R/4",
+    "-t_board/2"
+   ],
+   "style": "solid",
+   "lw": 0.6
+  },
+  {
+   "kind": "line",
+   "id": "ext3",
+   "p0": [
+    "x_table + L_table + 10",
+    "-R",
+    "-t_board/2"
+   ],
+   "p1": [
+    "x_table + L_table + 120",
+    "-R",
+    "-t_board/2"
+   ],
+   "style": "solid",
+   "lw": 0.6
+  },
+  {
+   "kind": "dim",
+   "id": "d1",
+   "p0": [
+    "x_table + L_table + 105",
+    0,
+    "-t_board/2"
+   ],
+   "p1": [
+    "x_table + L_table + 105",
+    "-R/4",
+    "-t_board/2"
+   ],
+   "offset": [
+    1,
+    0,
+    0
+   ],
+   "dist": 0.001,
+   "text": "$R/4$",
+   "screen_offset": [
+    6,
+    6
+   ],
+   "text_gap": 42
+  },
+  {
+   "kind": "dim",
+   "id": "d2",
+   "p0": [
+    "x_table + L_table + 105",
+    "-R/4",
+    "-t_board/2"
+   ],
+   "p1": [
+    "x_table + L_table + 105",
+    "-3*R/4",
+    "-t_board/2"
+   ],
+   "offset": [
+    1,
+    0,
+    0
+   ],
+   "dist": 0.001,
+   "text": "$R/2$",
+   "screen_offset": [
+    0,
+    0
+   ],
+   "text_gap": 42
+  },
+  {
+   "kind": "dim",
+   "id": "d3",
+   "p0": [
+    "x_table + L_table + 105",
+    "-3*R/4",
+    "-t_board/2"
+   ],
+   "p1": [
+    "x_table + L_table + 105",
+    "-R",
+    "-t_board/2"
+   ],
+   "offset": [
+    1,
+    0,
+    0
+   ],
+   "dist": 0.001,
+   "text": "$R/4$",
+   "screen_offset": [
+    -6,
+    -6
+   ],
+   "text_gap": 42
+  }
+ ],
+ "cameras": [
+  {
+   "az": 55,
+   "el": 28
+  },
+  {
+   "az": 62,
+   "el": 30
+  },
+  {
+   "az": 70,
+   "el": 32
+  }
+ ],
+ "light": [
+  -0.25,
+  0.45,
+  0.85
+ ],
+ "checks": {
+  "bbox_expect": {
+   "board": {
+    "xmin": 0,
+    "ymin": "-3*R/4",
+    "ymax": "-R/4"
+   },
+   "disk": {
+    "xmax": 0,
+    "zmin": "-R"
+   }
+  }
+ },
+ "pick": {
+  "az": 62,
+  "el": 30
+ }
+}

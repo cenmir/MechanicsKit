@@ -1,0 +1,274 @@
+{
+ "name": "wall_shelf",
+ "units": "mm",
+ "comment": "Wall shelf with a lamp (from a photo). A sheet-metal shelf of depth b rests with its back edge against the wall (B) and is carried at the front by two bent wire brackets, each screwed to the wall (A) a height h above the shelf and hooked over the front edge. Wall is x = 0, x points out of the wall, z up. Sizes estimated from the photo.",
+ "params": {
+  "b": 260,
+  "h": 190,
+  "W": 400,
+  "t": 2.5,
+  "lip": 18,
+  "r_w": 3,
+  "y_br": -180,
+  "x_L": 125,
+  "y_L": 20,
+  "r_base": 95,
+  "h_base": 24,
+  "L_stem": 260
+ },
+ "derived": {
+  "A_": "vec(7, y_br, h)",
+  "B_": "vec(0, y_br, -lip)"
+ },
+ "parts": [
+  {
+   "id": "wall",
+   "kind": "box",
+   "color": "#ece5d7",
+   "args": {
+    "lo": [
+     -30,
+     -240,
+     -140
+    ],
+    "hi": [
+     0,
+     240,
+     260
+    ]
+   }
+  },
+  {
+   "id": "shelf",
+   "kind": "box",
+   "color": "#f1eee7",
+   "args": {
+    "lo": [
+     0,
+     "-W/2",
+     "-t"
+    ],
+    "hi": [
+     "b",
+     "W/2",
+     0
+    ]
+   }
+  },
+  {
+   "id": "front_lip",
+   "kind": "box",
+   "color": "#f1eee7",
+   "args": {
+    "lo": [
+     "b - t",
+     "-W/2",
+     "-lip"
+    ],
+    "hi": [
+     "b",
+     "W/2",
+     0
+    ]
+   }
+  },
+  {
+   "id": "back_lip",
+   "kind": "box",
+   "color": "#f1eee7",
+   "args": {
+    "lo": [
+     0,
+     "-W/2",
+     "-lip"
+    ],
+    "hi": [
+     "t",
+     "W/2",
+     0
+    ]
+   }
+  },
+  {
+   "id": "bracket_left",
+   "kind": "wire",
+   "color": "#f3f1ec",
+   "args": {
+    "points": [
+     "A_",
+     "vec(7, y_br, h - 55)",
+     "vec(b - 8, y_br, r_w)",
+     "vec(b + r_w + 1, y_br, r_w)",
+     "vec(b + r_w + 1, y_br, -lip - 4)"
+    ],
+    "r": "r_w"
+   }
+  },
+  {
+   "id": "bracket_right",
+   "kind": "wire",
+   "color": "#f3f1ec",
+   "args": {
+    "points": [
+     "vec(7, -y_br, h)",
+     "vec(7, -y_br, h - 55)",
+     "vec(b - 8, -y_br, r_w)",
+     "vec(b + r_w + 1, -y_br, r_w)",
+     "vec(b + r_w + 1, -y_br, -lip - 4)"
+    ],
+    "r": "r_w"
+   }
+  },
+  {
+   "id": "screw_left",
+   "kind": "knob",
+   "color": "#b9bbbe",
+   "args": {
+    "p": "vec(0, y_br, h)",
+    "dir": [
+     1,
+     0,
+     0
+    ],
+    "r": 6,
+    "L": 4
+   }
+  },
+  {
+   "id": "screw_right",
+   "kind": "knob",
+   "color": "#b9bbbe",
+   "args": {
+    "p": "vec(0, -y_br, h)",
+    "dir": [
+     1,
+     0,
+     0
+    ],
+    "r": 6,
+    "L": 4
+   }
+  },
+  {
+   "id": "lamp_base",
+   "kind": "rod",
+   "color": "#f3efe6",
+   "args": {
+    "p0": "vec(x_L, y_L, 0)",
+    "p1": "vec(x_L, y_L, h_base)",
+    "r": "r_base"
+   }
+  },
+  {
+   "id": "lamp_collar",
+   "kind": "rod",
+   "color": "#f3efe6",
+   "args": {
+    "p0": "vec(x_L, y_L, h_base)",
+    "p1": "vec(x_L, y_L, h_base + 10)",
+    "r": 14
+   }
+  },
+  {
+   "id": "lamp_stem",
+   "kind": "rod",
+   "color": "#f3efe6",
+   "args": {
+    "p0": "vec(x_L, y_L, h_base)",
+    "p1": "vec(x_L, y_L, h_base + L_stem)",
+    "r": 9
+   }
+  }
+ ],
+ "annotations": [
+  {
+   "kind": "dim",
+   "id": "h",
+   "p0": "vec(1, y_br - 30, 0)",
+   "p1": "vec(1, y_br - 30, h)",
+   "offset": [
+    0,
+    -1,
+    0
+   ],
+   "dist": 25,
+   "text": "$h$"
+  },
+  {
+   "kind": "dim",
+   "id": "b",
+   "p0": "vec(0, -W/2, -lip)",
+   "p1": "vec(b, -W/2, -lip)",
+   "offset": [
+    0,
+    0,
+    -1
+   ],
+   "dist": 45,
+   "text": "$b$"
+  },
+  {
+   "kind": "force",
+   "id": "mg",
+   "at": "vec(x_L + 55, y_L + 45, h_base)",
+   "dir": [
+    0,
+    0,
+    -1
+   ],
+   "length": 110,
+   "head": true,
+   "text": "$mg$",
+   "screen_offset": [
+    24,
+    8
+   ]
+  },
+  {
+   "kind": "point",
+   "id": "A",
+   "at": "vec(11, y_br, h)",
+   "ms": 4,
+   "text": "$A$",
+   "screen_offset": [
+    -14,
+    10
+   ]
+  },
+  {
+   "kind": "point",
+   "id": "B",
+   "at": "vec(0, -W/2, -lip/2)",
+   "ms": 4,
+   "text": "$B$",
+   "screen_offset": [
+    -16,
+    -2
+   ]
+  }
+ ],
+ "cameras": [
+  {
+   "az": 40,
+   "el": 25
+  },
+  {
+   "az": 50,
+   "el": 28
+  },
+  {
+   "az": 60,
+   "el": 30
+  }
+ ],
+ "light": [
+  -0.25,
+  0.45,
+  0.85
+ ],
+ "checks": {},
+ "pick": {
+  "az": 50,
+  "el": 28
+ }
+}

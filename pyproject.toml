@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mechanicskit"
-version = "0.21.0"
+version = "0.22.0"
 authors = [
   { name="Mirza Cenanovic", email="mirza.cenanovic@gmail.com" },
 ]
@@ -32,6 +32,9 @@ dependencies = [
     "sympy>=1.10",
     "tabulate>=0.9",
 ]
+
+[project.scripts]
+scene3d = "mechanicskit.scene3d:main"
 
 [project.optional-dependencies]
 cad = ["build123d>=0.9"]

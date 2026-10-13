@@ -1,0 +1,529 @@
+{
+ "name": "tv_mount",
+ "units": "mm",
+ "comment": "Tilting TV wall mount (from a photo). The tilt joint pivots on the lower knob P; the upper knob K, clamped in an arc slot of radius r, holds the tilt by friction F_f. The wall plate is held by two screws h apart. Wall is x = 0, x points out of the wall, z up. The TV is drawn cut beside the mount so the joint stays visible. All sizes are estimated from the photo (VESA plate taken as 200 mm wide).",
+ "params": {
+  "h": 150,
+  "a": 85,
+  "b": 112,
+  "r": 60,
+  "theta": 20,
+  "z_P": -35,
+  "y_side": -49
+ },
+ "derived": {
+  "th": "radians(theta)",
+  "P_": "vec(a, y_side - 3, z_P)",
+  "K_": "P_ + r*vec(-sin(th), 0, cos(th))",
+  "t_K": "vec(-cos(th), 0, -sin(th))",
+  "G_": "vec(a + b, y_side - 12, z_P)"
+ },
+ "parts": [
+  {
+   "id": "wall",
+   "kind": "box",
+   "color": "#ebe7df",
+   "args": {
+    "lo": [
+     -30,
+     -110,
+     -190
+    ],
+    "hi": [
+     0,
+     110,
+     190
+    ]
+   }
+  },
+  {
+   "id": "wall_plate",
+   "kind": "plate",
+   "color": "#4a4c50",
+   "args": {
+    "lo": [
+     0,
+     -40,
+     -95
+    ],
+    "hi": [
+     8,
+     40,
+     95
+    ],
+    "r_corner": 8,
+    "round_side": "+z"
+   }
+  },
+  {
+   "id": "screw_top",
+   "kind": "knob",
+   "color": "#9a9ca0",
+   "args": {
+    "p": [
+     8,
+     0,
+     "h/2"
+    ],
+    "dir": [
+     1,
+     0,
+     0
+    ],
+    "r": 8,
+    "L": 4
+   }
+  },
+  {
+   "id": "screw_bottom",
+   "kind": "knob",
+   "color": "#9a9ca0",
+   "args": {
+    "p": [
+     8,
+     0,
+     "-h/2"
+    ],
+    "dir": [
+     1,
+     0,
+     0
+    ],
+    "r": 8,
+    "L": 4
+   }
+  },
+  {
+   "id": "lug_top",
+   "kind": "box",
+   "color": "#4a4c50",
+   "args": {
+    "lo": [
+     8,
+     -14,
+     46
+    ],
+    "hi": [
+     40,
+     14,
+     58
+    ]
+   }
+  },
+  {
+   "id": "lug_bottom",
+   "kind": "box",
+   "color": "#4a4c50",
+   "args": {
+    "lo": [
+     8,
+     -14,
+     -58
+    ],
+    "hi": [
+     40,
+     14,
+     -46
+    ]
+   }
+  },
+  {
+   "id": "hinge_pin",
+   "kind": "rod",
+   "color": "#5a5c60",
+   "args": {
+    "p0": [
+     36,
+     0,
+     -72
+    ],
+    "p1": [
+     36,
+     0,
+     72
+    ],
+    "r": 11
+   }
+  },
+  {
+   "id": "hinge_cap",
+   "kind": "knob",
+   "color": "#5a5c60",
+   "args": {
+    "p": [
+     36,
+     0,
+     72
+    ],
+    "dir": [
+     0,
+     0,
+     1
+    ],
+    "r": 13,
+    "L": 6
+   }
+  },
+  {
+   "id": "web",
+   "kind": "box",
+   "color": "#4a4c50",
+   "args": {
+    "lo": [
+     40,
+     -52,
+     -60
+    ],
+    "hi": [
+     50,
+     52,
+     45
+    ]
+   }
+  },
+  {
+   "id": "side_plate",
+   "kind": "plate",
+   "color": "#4a4c50",
+   "args": {
+    "lo": [
+     40,
+     "y_side - 3",
+     -60
+    ],
+    "hi": [
+     125,
+     "y_side + 3",
+     45
+    ],
+    "r_corner": 10,
+    "round_side": "+x",
+    "slots": [
+     {
+      "centre": "P_",
+      "r": "r",
+      "w": 10,
+      "a0": 62,
+      "a1": 118
+     }
+    ]
+   }
+  },
+  {
+   "id": "side_plate_far",
+   "kind": "plate",
+   "color": "#4a4c50",
+   "args": {
+    "lo": [
+     40,
+     "-y_side - 3",
+     -60
+    ],
+    "hi": [
+     125,
+     "-y_side + 3",
+     45
+    ],
+    "r_corner": 10,
+    "round_side": "+x"
+   }
+  },
+  {
+   "id": "inner_plate",
+   "kind": "box",
+   "color": "#3c3e42",
+   "args": {
+    "lo": [
+     60,
+     -44,
+     -55
+    ],
+    "hi": [
+     140,
+     -38,
+     40
+    ]
+   }
+  },
+  {
+   "id": "vesa_plate",
+   "kind": "plate",
+   "color": "#3c3e42",
+   "args": {
+    "lo": [
+     140,
+     -58,
+     -170
+    ],
+    "hi": [
+     150,
+     100,
+     190
+    ],
+    "holes": [
+     [
+      140,
+      -35,
+      150
+     ],
+     [
+      140,
+      -35,
+      -130
+     ]
+    ],
+    "hole_r": 4
+   }
+  },
+  {
+   "id": "spacer_top",
+   "kind": "box",
+   "color": "#e8d2a6",
+   "args": {
+    "lo": [
+     150,
+     -52,
+     110
+    ],
+    "hi": [
+     172,
+     -22,
+     160
+    ]
+   }
+  },
+  {
+   "id": "spacer_bottom",
+   "kind": "box",
+   "color": "#e8d2a6",
+   "args": {
+    "lo": [
+     150,
+     -52,
+     -150
+    ],
+    "hi": [
+     172,
+     -22,
+     -100
+    ]
+   }
+  },
+  {
+   "id": "tv",
+   "kind": "box",
+   "color": "#55585e",
+   "args": {
+    "lo": [
+     172,
+     "y_side - 12",
+     -230
+    ],
+    "hi": [
+     222,
+     160,
+     230
+    ]
+   }
+  },
+  {
+   "id": "pivot_knob",
+   "kind": "knob",
+   "color": "#2c2d30",
+   "args": {
+    "p": "P_",
+    "dir": [
+     0,
+     -1,
+     0
+    ],
+    "r": 9,
+    "L": 9
+   }
+  },
+  {
+   "id": "clamp_knob",
+   "kind": "knob",
+   "color": "#2c2d30",
+   "args": {
+    "p": "K_",
+    "dir": [
+     0,
+     -1,
+     0
+    ],
+    "r": 9,
+    "L": 9
+   }
+  }
+ ],
+ "annotations": [
+  {
+   "kind": "line",
+   "id": "vertical_P",
+   "p0": "P_ + vec(0, -12, 0)",
+   "p1": "P_ + vec(0, -12, r + 25)",
+   "style": "dashed"
+  },
+  {
+   "kind": "line",
+   "id": "radius_PK",
+   "p0": "P_ + vec(0, -12, 0)",
+   "p1": "K_ + vec(0, -12, 0)",
+   "style": "solid",
+   "lw": 0.9
+  },
+  {
+   "kind": "arc",
+   "id": "theta",
+   "role": "angle",
+   "centre": "P_ + vec(0, -12, 0)",
+   "axis": [
+    0,
+    1,
+    0
+   ],
+   "r": 34,
+   "a0": -90,
+   "a1": "-90 - theta",
+   "text": "$\\theta$",
+   "screen_offset": [
+    8,
+    8
+   ]
+  },
+  {
+   "kind": "dim",
+   "id": "r",
+   "p0": "P_ + vec(0, -12, 0)",
+   "p1": "K_ + vec(0, -12, 0)",
+   "offset": "vec(cos(th), 0, sin(th))",
+   "dist": 0.001,
+   "text": "$r$",
+   "text_gap": -16
+  },
+  {
+   "kind": "dim",
+   "id": "h",
+   "p0": [
+    8,
+    -40,
+    "h/2"
+   ],
+   "p1": [
+    8,
+    -40,
+    "-h/2"
+   ],
+   "offset": [
+    0,
+    -1,
+    0
+   ],
+   "dist": 45,
+   "text": "$h$"
+  },
+  {
+   "kind": "dim",
+   "id": "a",
+   "p0": [
+    0,
+    "y_side - 12",
+    "z_P"
+   ],
+   "p1": "P_ + vec(0, -9, 0)",
+   "offset": [
+    0,
+    0,
+    -1
+   ],
+   "dist": 95,
+   "text": "$a$"
+  },
+  {
+   "kind": "dim",
+   "id": "b",
+   "p0": "P_ + vec(0, -9, 0)",
+   "p1": "G_",
+   "offset": [
+    0,
+    0,
+    -1
+   ],
+   "dist": 95,
+   "text": "$b$"
+  },
+  {
+   "kind": "force",
+   "id": "F_f",
+   "at": "K_ + vec(0, -18, 0)",
+   "dir": "t_K",
+   "length": 80,
+   "head": true,
+   "text": "$F_f$",
+   "screen_offset": [
+    8,
+    20
+   ]
+  },
+  {
+   "kind": "cog",
+   "id": "G",
+   "at": "G_",
+   "size": 13
+  },
+  {
+   "kind": "force",
+   "id": "mg",
+   "at": "G_ - vec(0, 0, 14)",
+   "dir": [
+    0,
+    0,
+    -1
+   ],
+   "length": 120,
+   "text": "$mg$"
+  },
+  {
+   "kind": "point",
+   "id": "P",
+   "at": "P_ + vec(0, -18, 0)",
+   "ms": 4,
+   "text": "$P$",
+   "screen_offset": [
+    14,
+    -12
+   ]
+  },
+  {
+   "kind": "point",
+   "id": "K",
+   "at": "K_ + vec(0, -18, 0)",
+   "ms": 4
+  }
+ ],
+ "cameras": [
+  {
+   "az": 15,
+   "el": 18
+  },
+  {
+   "az": 22,
+   "el": 22
+  },
+  {
+   "az": 30,
+   "el": 24
+  }
+ ],
+ "light": [
+  -0.25,
+  0.45,
+  0.85
+ ],
+ "checks": {},
+ "pick": {
+  "az": 22,
+  "el": 22
+ }
+}

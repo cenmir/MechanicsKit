@@ -1,0 +1,342 @@
+{
+ "name": "motor_spring",
+ "units": "mm",
+ "comment": "ForceVectorsIn3D: a motor at A turns the shaft AB (tilted theta_1 = 35 deg about the local x axis); the crank BCD carries a spring DE to the base. Same kinematics as the notebook: local frame X~ = Rx(-theta_1) Rz(theta_2). The Fusion 360 figure shows theta_2 = 0.",
+ "params": {
+  "theta_1": 35,
+  "theta_2": 0,
+  "r_AB": 65,
+  "r_BC": 50,
+  "t_plate": 6,
+  "W": 200,
+  "H": 230,
+  "L_base": 230
+ },
+ "derived": {
+  "t1": "radians(theta_1)",
+  "t2": "radians(theta_2)",
+  "xt": "vec(cos(t2), sin(t2)*cos(t1), -sin(t2)*sin(t1))",
+  "yt": "vec(-sin(t2), cos(t2)*cos(t1), -cos(t2)*sin(t1))",
+  "zt": "vec(0, sin(t1), cos(t1))",
+  "A": "vec(30, 60, 75)",
+  "E": "vec(175, 105, 15)",
+  "B": "A + r_AB*zt",
+  "C": "B + r_BC*xt",
+  "D": "C + 70*xt + 40*zt",
+  "G": "A + 34*xt + 51*zt"
+ },
+ "parts": [
+  {
+   "id": "back_plate",
+   "kind": "plate",
+   "color": "#9aa08a",
+   "args": {
+    "lo": [
+     "-t_plate",
+     -15,
+     "-t_plate"
+    ],
+    "hi": [
+     0,
+     "W",
+     "H"
+    ],
+    "r_corner": 18,
+    "round_side": "+z",
+    "holes": [
+     [
+      0,
+      170,
+      95
+     ],
+     [
+      0,
+      170,
+      200
+     ],
+     [
+      0,
+      15,
+      200
+     ]
+    ],
+    "hole_r": 2.5
+   }
+  },
+  {
+   "id": "base_plate",
+   "kind": "plate",
+   "color": "#9aa08a",
+   "args": {
+    "lo": [
+     0,
+     -15,
+     "-t_plate"
+    ],
+    "hi": [
+     "L_base",
+     "W",
+     0
+    ],
+    "r_corner": 18,
+    "round_side": "+x",
+    "holes": [
+     [
+      40,
+      5,
+      0
+     ],
+     [
+      110,
+      160,
+      0
+     ],
+     [
+      200,
+      60,
+      0
+     ]
+    ],
+    "hole_r": 2.5
+   }
+  },
+  {
+   "id": "motor",
+   "kind": "rod",
+   "color": "#95dd95",
+   "args": {
+    "p0": "A - 20*zt",
+    "p1": "A + 20*zt",
+    "r": 23
+   }
+  },
+  {
+   "id": "motor_block",
+   "kind": "bar_link",
+   "color": "#95dd95",
+   "args": {
+    "points": [
+     "A - 20*zt - 12*yt",
+     "A + 20*zt - 12*yt"
+    ],
+    "w": 24,
+    "h": 46,
+    "normal": "xt",
+    "round_ends": false
+   }
+  },
+  {
+   "id": "shaft",
+   "kind": "rod",
+   "color": "#aaa7c9",
+   "args": {
+    "p0": "A - 68*zt",
+    "p1": "B + 6*zt",
+    "r": 7
+   }
+  },
+  {
+   "id": "crank",
+   "kind": "bar_link",
+   "color": "#aaa7c9",
+   "args": {
+    "points": [
+     "B",
+     "C",
+     "D"
+    ],
+    "w": 18,
+    "h": 12,
+    "normal": "yt"
+   }
+  },
+  {
+   "id": "hub",
+   "kind": "rod",
+   "color": "#aaa7c9",
+   "args": {
+    "p0": "B - 6*zt",
+    "p1": "B + 8*zt",
+    "r": 12
+   }
+  },
+  {
+   "id": "spring",
+   "kind": "rod",
+   "color": "#29a8e0",
+   "args": {
+    "p0": "D",
+    "p1": "E",
+    "r": 2.2
+   }
+  },
+  {
+   "id": "anchor",
+   "kind": "box",
+   "color": "#8a8a84",
+   "args": {
+    "lo": "E - vec(9, 8, 15)",
+    "hi": "E + vec(9, 8, 8)"
+   }
+  }
+ ],
+ "annotations": [
+  {
+   "kind": "line",
+   "id": "vertical_A",
+   "p0": "A - vec(0, 0, 60)",
+   "p1": "A + vec(0, 0, 110)",
+   "style": "centre"
+  },
+  {
+   "kind": "line",
+   "id": "axis_AB",
+   "p0": "A - 85*zt",
+   "p1": "B + 30*zt",
+   "style": "centre"
+  },
+  {
+   "kind": "line",
+   "id": "horizontal_D",
+   "p0": "D - vec(0, 45, 0)",
+   "p1": "D + vec(0, 45, 0)",
+   "style": "dashed"
+  },
+  {
+   "kind": "arc",
+   "id": "theta_1",
+   "centre": "A",
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "r": 44,
+   "a0": -90,
+   "a1": "-90 - theta_1",
+   "text": "$\\theta_1$",
+   "screen_offset": [
+    -4,
+    16
+   ]
+  },
+  {
+   "kind": "arc",
+   "id": "theta_2",
+   "centre": "A - 52*zt",
+   "axis": "zt",
+   "r": 14,
+   "a0": 40,
+   "a1": 320,
+   "text": "$\\theta_2$",
+   "screen_offset": [
+    10,
+    -30
+   ]
+  },
+  {
+   "kind": "triad",
+   "id": "xyz",
+   "at": [
+    0,
+    0,
+    0
+   ],
+   "length": 55
+  },
+  {
+   "kind": "point",
+   "id": "O",
+   "at": [
+    0,
+    0,
+    0
+   ],
+   "text": "$O$",
+   "screen_offset": [
+    -16,
+    -12
+   ]
+  },
+  {
+   "kind": "point",
+   "id": "A",
+   "at": "A",
+   "text": "$A$",
+   "screen_offset": [
+    -14,
+    2
+   ]
+  },
+  {
+   "kind": "point",
+   "id": "B",
+   "at": "B",
+   "text": "$B$",
+   "screen_offset": [
+    16,
+    12
+   ]
+  },
+  {
+   "kind": "point",
+   "id": "C",
+   "at": "C",
+   "text": "$C$",
+   "screen_offset": [
+    6,
+    16
+   ]
+  },
+  {
+   "kind": "point",
+   "id": "D",
+   "at": "D",
+   "text": "$D$",
+   "screen_offset": [
+    14,
+    2
+   ]
+  },
+  {
+   "kind": "point",
+   "id": "E",
+   "at": "E",
+   "text": "$E$",
+   "screen_offset": [
+    14,
+    4
+   ]
+  },
+  {
+   "kind": "point",
+   "id": "G",
+   "at": "G",
+   "text": "$G$",
+   "screen_offset": [
+    -16,
+    -8
+   ]
+  }
+ ],
+ "cameras": [
+  {
+   "az": 64,
+   "el": 28
+  },
+  {
+   "az": 72,
+   "el": 30
+  },
+  {
+   "az": 80,
+   "el": 32
+  }
+ ],
+ "light": [
+  -0.25,
+  0.45,
+  0.85
+ ],
+ "checks": {}
+}
