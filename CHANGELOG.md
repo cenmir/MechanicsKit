@@ -49,6 +49,10 @@ decide patch vs. minor before pushing.
 - `examples/scene3d/winch.json`: the Meriam & Kraige winch as a worked spec.
 - `docs/scene3d.qmd` (PDF): how the pipeline works and how to use it.
 
+### Changed
+- README installation section: `uv pip` commands, a clone-and-install recipe, and the
+  optional `[cad]` extra explained.
+
 ## [0.20.0] - 2026-10-13
 
 ### Added

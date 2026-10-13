@@ -11,14 +11,34 @@ The library's core capabilities include:
 
 ## Installation
 
-Install the package directly from GitHub using `pip`:
+Install the package directly from GitHub:
 ```bash
-pip install git+https://github.com/cenmir/mechanicskit.git
+uv pip install git+https://github.com/cenmir/mechanicskit.git
 ```
 For development, clone the repository and install it in editable mode:
 ```bash
+git clone https://github.com/cenmir/mechanicskit.git
+cd mechanicskit
 uv pip install -e .
 ```
+Plain `pip install ...` works the same way if you do not use [uv](https://docs.astral.sh/uv/).
+
+### Optional: CAD support for 3D figures (`[cad]`)
+
+The base install needs only numpy, matplotlib, sympy and tabulate. The module
+`mechanicskit.scene3d`, which draws shaded 3D problem figures from solids, also needs a
+CAD kernel: [build123d](https://github.com/gumyr/build123d) on OpenCascade. It is an
+*optional extra*, named `cad`, because the OpenCascade wheel is several hundred MB and
+most users never need it. Add `[cad]` to the install to get it:
+```bash
+uv pip install "mechanicskit[cad] @ git+https://github.com/cenmir/mechanicskit.git"
+uv pip install -e ".[cad]"          # in a clone
+```
+Keep the quotes; some shells (zsh) read the square brackets as a file pattern. Wheels
+exist for Python 3.10 to 3.13. `import mechanicskit` never loads `scene3d`, so
+everything else works without the extra; importing `scene3d` without it raises an error
+that names the command above. See [`docs/scene3d.qmd`](docs/scene3d.qmd) (or the
+[PDF](docs/scene3d.pdf)) for what `scene3d` does and how to use it.
 
 ## Core Capabilities
 

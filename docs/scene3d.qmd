@@ -44,14 +44,47 @@ Everything after the geometry is numpy and matplotlib: shading, the z-buffer, tr
 
 # Installation
 
-The CAD dependency is optional, so the base `mechanicskit` install stays light. `import mechanicskit` does not import `scene3d`.
+MechanicsKit installs from GitHub. The base package needs only numpy, matplotlib, sympy and tabulate:
 
 ```bash
-uv pip install -e "/home/mirza/python/MechanicsKit[cad]"     # a clone
-uv pip install "mechanicskit[cad] @ git+https://github.com/cenmir/mechanicskit.git"
+uv pip install git+https://github.com/cenmir/mechanicskit.git
 ```
 
-The `cad` extra pulls in `build123d>=0.9`, which brings OCP. Wheels exist for Python 3.10 to 3.13 on Linux, macOS and Windows; a dry run against the book's Python 3.13 venv resolves cleanly. The first import takes about two seconds while OpenCascade loads.
+`scene3d` also needs a CAD kernel, so it comes as an *optional extra* named `cad`. The extra is a named group of additional dependencies in `pyproject.toml`:
+
+```toml
+[project.optional-dependencies]
+cad = ["build123d>=0.9"]
+```
+
+Writing `[cad]` after the package name installs the package together with that group:
+
+```bash
+# from GitHub
+uv pip install "mechanicskit[cad] @ git+https://github.com/cenmir/mechanicskit.git"
+
+# in a clone, editable
+git clone https://github.com/cenmir/mechanicskit.git
+cd mechanicskit
+uv pip install -e ".[cad]"
+
+# an existing install, adding the extra afterwards
+uv pip install -e "/path/to/MechanicsKit[cad]"
+```
+
+Keep the quotes, since zsh reads the square brackets as a file pattern. Plain `pip` accepts the same arguments as `uv pip`. The extra is optional because build123d brings OCP, the OpenCascade wheel of several hundred megabytes, which a student who only uses `la`, `fplot` or the FEM tools should not have to download. `import mechanicskit` never imports `scene3d`. Importing it without the extra raises
+
+```
+ImportError: mechanicskit.scene3d needs build123d: uv pip install "mechanicskit[cad]"
+```
+
+Wheels exist for Python 3.10 to 3.13 on Linux, macOS and Windows. The book's Python 3.13 venv has the extra installed. A quick check that everything is in place:
+
+```bash
+python -c "import mechanicskit, build123d; from mechanicskit import scene3d; print(mechanicskit.__version__, build123d.__version__)"
+```
+
+The first import takes about two seconds while OpenCascade loads.
 
 # Using it
 
