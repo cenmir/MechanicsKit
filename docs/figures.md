@@ -606,3 +606,13 @@ The book learned this the hard way: by October 2026 its scripts carried about fi
 helpers copied between them with drifting defaults (a bare arrow in eight scripts, a
 unit vector at an angle in eight, three versions of a side-labelled dimension). They were
 moved into the library in 0.10.0.
+
+## 3D figures from solids
+
+For a three-dimensional machine figure (a winch, a crank on its bearing, a shaft with
+pulleys) that would take hours with `Proj` and `sketch_extra`, use `mechanicskit.scene3d`:
+a JSON scene spec with the problem's parameters, parts from named primitives and
+annotations in 3D, rendered through build123d and OpenCascade hidden-line removal into
+an SVG in this standard. It needs `mechanicskit[cad]`. The method, the spec format and
+the agent loop are in [`docs/scene3d.qmd`](scene3d.qmd); the worked example is
+`examples/scene3d/winch.json`.

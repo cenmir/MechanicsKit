@@ -135,3 +135,5 @@ Thumbs.db
 
 # Development files (notes, AI assistant files, todos, etc.)
 dev/
+# scene3d render output (regenerate with python -m mechanicskit.scene3d)
+examples/scene3d/*/

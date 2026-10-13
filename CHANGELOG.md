@@ -33,6 +33,22 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.21.0] - 2026-10-13
+
+### Added
+- `mechanicskit.scene3d`: 3D problem figures from a JSON scene spec. Parts are
+  exact build123d (OpenCascade) solids, edges come from OpenCascade hidden-line
+  removal, shading is Lambert bands traced from a z-buffer into simplified vector
+  fills, annotations are 3D objects projected with the same orthographic camera
+  and drawn with `sketch`. Every candidate camera is rendered and scored by
+  ray-cast occlusion of the annotations, label overlaps and labels on edges;
+  physics checks cover rope tangency and load placement. CLI:
+  `python -m mechanicskit.scene3d spec.json`. New optional extra
+  `mechanicskit[cad]` (build123d); `scene3d` is not imported by `mechanicskit`
+  itself, so the base install stays light.
+- `examples/scene3d/winch.json`: the Meriam & Kraige winch as a worked spec.
+- `docs/scene3d.qmd` (PDF): how the pipeline works and how to use it.
+
 ## [0.20.0] - 2026-10-13
 
 ### Added

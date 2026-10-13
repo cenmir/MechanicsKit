@@ -1,0 +1,323 @@
+{
+ "name": "winch",
+ "units": "mm",
+ "comment": "Meriam & Kraige winch: 40 kg on a 250 mm drum radius, held by P on a 400 mm crank. Shaft axis is x, z is up, the viewer sits on the -y side.",
+ "params": {
+  "r_rope": 250,
+  "d_rope": 16,
+  "drum_w": 240,
+  "r_flange": 300,
+  "t_flange": 20,
+  "r_shaft": 25,
+  "x_block": 480,
+  "block_w": 110,
+  "gap": 50,
+  "t_arm": 25,
+  "L_arm": 400,
+  "w_hub": 80,
+  "w_tip": 52,
+  "m": 40,
+  "r_mass": 85,
+  "h_mass": 160,
+  "drop": 620
+ },
+ "parts": [
+  {
+   "id": "drum",
+   "kind": "drum",
+   "color": "steel",
+   "args": {
+    "x0": 0,
+    "w": "drum_w",
+    "r_core": "r_rope - d_rope/2",
+    "r_flange": "r_flange",
+    "t_flange": "t_flange",
+    "r_hub": 55,
+    "hub_len": 30
+   }
+  },
+  {
+   "id": "rope_wraps",
+   "kind": "rope_wraps",
+   "color": "rope",
+   "args": {
+    "x0": 0,
+    "w": "drum_w",
+    "r": "r_rope",
+    "d": "d_rope"
+   }
+  },
+  {
+   "id": "rope",
+   "kind": "rod",
+   "color": "rope",
+   "args": {
+    "p0": [
+     "d_rope/2",
+     "-r_rope",
+     0
+    ],
+    "p1": [
+     "d_rope/2",
+     "-r_rope",
+     "-drop"
+    ],
+    "r": "d_rope/2"
+   }
+  },
+  {
+   "id": "shaft",
+   "kind": "rod",
+   "color": "steel",
+   "args": {
+    "p0": [
+     "drum_w + t_flange",
+     0,
+     0
+    ],
+    "p1": [
+     "x_block + gap + 30",
+     0,
+     0
+    ],
+    "r": "r_shaft"
+   }
+  },
+  {
+   "id": "collar",
+   "kind": "rod",
+   "color": "steel",
+   "args": {
+    "p0": [
+     "x_block - block_w - 22",
+     0,
+     0
+    ],
+    "p1": [
+     "x_block + 14",
+     0,
+     0
+    ],
+    "r": 36
+   }
+  },
+  {
+   "id": "block",
+   "kind": "pillow_block",
+   "color": "block",
+   "args": {
+    "x0": "x_block - block_w",
+    "x1": "x_block",
+    "r_top": 115,
+    "half_w": 115,
+    "z_base": -320,
+    "base_half_w": 175,
+    "t_base": 45
+   }
+  },
+  {
+   "id": "crank",
+   "kind": "crank",
+   "color": "body",
+   "args": {
+    "x_mid": "x_block + gap",
+    "t": "t_arm",
+    "L": "L_arm",
+    "r_hub": "w_hub/2",
+    "r_tip": "w_tip/2",
+    "dir": [
+     0,
+     1,
+     0
+    ]
+   }
+  },
+  {
+   "id": "mass",
+   "kind": "rod",
+   "color": "mass",
+   "args": {
+    "p0": [
+     "d_rope/2",
+     "-r_rope",
+     "-drop"
+    ],
+    "p1": [
+     "d_rope/2",
+     "-r_rope",
+     "-drop - h_mass"
+    ],
+    "r": "r_mass"
+   }
+  }
+ ],
+ "annotations": [
+  {
+   "kind": "force",
+   "id": "P",
+   "at": [
+    "x_block + gap",
+    "L_arm - 10",
+    "t_arm/2 + 3"
+   ],
+   "dir": [
+    0,
+    0,
+    -1
+   ],
+   "length": 170,
+   "text": "$P$",
+   "head": true
+  },
+  {
+   "kind": "dim",
+   "id": "L_arm",
+   "p0": [
+    "x_block + gap",
+    0,
+    0
+   ],
+   "p1": [
+    "x_block + gap",
+    "L_arm",
+    0
+   ],
+   "offset": [
+    -0.3,
+    0,
+    0.95
+   ],
+   "dist": 105,
+   "text": "400 mm"
+  },
+  {
+   "kind": "dim",
+   "id": "gap",
+   "p0": [
+    "x_block",
+    0,
+    -75
+   ],
+   "p1": [
+    "x_block + gap",
+    0,
+    -75
+   ],
+   "offset": [
+    0,
+    0,
+    -1
+   ],
+   "dist": 110,
+   "text": "50 mm",
+   "text_at": "outside"
+  },
+  {
+   "kind": "circle",
+   "id": "pitch",
+   "centre": [
+    "drum_w + t_flange",
+    0,
+    0
+   ],
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "r": "r_rope"
+  },
+  {
+   "kind": "radius",
+   "id": "r_rope",
+   "centre": [
+    "drum_w + t_flange",
+    0,
+    0
+   ],
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "r": "r_rope",
+   "angle_deg": 0,
+   "text": "250 mm",
+   "r0": 58,
+   "text_gap": 0,
+   "screen_offset": [
+    -45,
+    42
+   ]
+  },
+  {
+   "kind": "label",
+   "id": "D",
+   "at": [
+    "drum_w + t_flange",
+    0,
+    "r_flange + 35"
+   ],
+   "text": "$D$",
+   "screen_offset": [
+    60,
+    10
+   ]
+  },
+  {
+   "kind": "label",
+   "id": "mass",
+   "at": [
+    "d_rope/2",
+    "-r_rope",
+    "-drop - h_mass"
+   ],
+   "text": "40 kg",
+   "screen_offset": [
+    0,
+    -75
+   ]
+  }
+ ],
+ "cameras": [
+  {
+   "az": 20,
+   "el": 22
+  },
+  {
+   "az": 32,
+   "el": 26
+  },
+  {
+   "az": 45,
+   "el": 30
+  }
+ ],
+ "light": [
+  -0.25,
+  0.45,
+  0.85
+ ],
+ "checks": {
+  "rope_tangent": {
+   "rope": "rope",
+   "axis": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     1,
+     0,
+     0
+    ]
+   ],
+   "r": "r_rope"
+  },
+  "load_below": {
+   "load": "mass",
+   "above": "drum"
+  }
+ }
+}
