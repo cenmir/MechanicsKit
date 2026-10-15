@@ -46,6 +46,7 @@ from .truss import draw_truss, animate_truss, pin_support, roller_support
 from . import sketch
 from . import sketch_extra
 from . import fits
+from . import friction
 from . import gears
 from . import breadboard
 from .gaussint import gaussint

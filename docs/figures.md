@@ -52,6 +52,7 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `sk.coil(ax, p0, p1, coils, width)` | a smooth spring of S-shaped waves, as FBD Lab draws it |
 | `sk.dashpot(ax, p0, p1, width, lead, cup)` | a damper, cylinder end at p0, at any angle |
 | `sk.gas_spring(ax, p0, p1, width, tube, rod)` | a gas spring or hydraulic cylinder in steel, tube at p0, eyes centred on both pins |
+| `sk.spring_scale(ax, p0, p1, width, case, rod, stretch)` | a spring balance (force gauge): a see-through case with a scale, the spring and piston plate inside, the rod out to the hook at p0 |
 | `sk.helix_centres(d, p, n_active, n_closed)` / `sk.helical_spring(ax, x0, D, d, z)` | a helical compression spring in side view, wire sections and front bands, closed end coils |
 | `sk.box(ax, xy, w, h, angle, centred)` | a block or crate: corner (or centre) and size, turned |
 | `sk.trapezoid(ax, centre, w_bottom, w_top, h, angle)` | a wedge or a pad |

@@ -33,6 +33,21 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [Unreleased]
+
+### Added
+- `mechanicskit.friction`: coefficients of friction with a source per table. Material
+  pairs static and sliding, dry and lubricated (Marks 8th ed. via NASA RP-1228 Table IV),
+  the VDI 2230 bolt friction classes A to E, brake and clutch linings (Shigley Table 16-3)
+  and interference-fit slip coefficients (DIN 7190). Lookups `pair`, `bolt_class`,
+  `classify_bolt` and `pressed_fit`, and `friction.table(name)`, which returns a table as
+  Markdown for Jupyter, Quarto and marimo.
+- `friction.materials()`, `friction.partners(material)` and `friction.SOURCES_SHORT`, for
+  pickers such as the FrictionPairs notebook of the mechanics book.
+- `friction.PAIRS` keeps only the pairs with both dry coefficients, static and sliding.
+- `sketch.spring_scale`: a spring balance (force gauge) at any angle, for measurement
+  setups such as the pull test of the Friction chapter.
+
 ## [0.22.0] - 2026-10-13
 
 ### Added

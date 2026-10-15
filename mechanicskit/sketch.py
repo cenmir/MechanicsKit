@@ -276,6 +276,39 @@ def gas_spring(ax, p0, p1, width=0.12, tube=0.55, rod=0.4, eye=None, facecolor=S
 
 
 
+def spring_scale(ax, p0, p1, width=0.4, case=0.6, rod=0.25, stretch=0.5, coils=6, ticks=6,
+                 facecolor="#eef5f9", edgecolor=STEEL_EDGE, zorder=3):
+    """A spring balance, a force gauge, from ``p0`` (the hook of the rod) to ``p1`` (the
+    end of the case).
+
+    A see-through case ``width`` wide and ``case`` of the whole length long holds a spring
+    between its far end and a piston plate; the rod runs from the plate out through the
+    near end to ``p0``, ``rod`` of the whole length outside the case, and a line goes on from
+    the far end to ``p1``. ``stretch`` (0 to 1) places the plate along the case, and ``ticks``
+    marks the scale on the case. The pull acts along ``p0``-``p1``. Returns the plate centre.
+    """
+    p0, p1 = _xy(p0), _xy(p1)
+    L = np.linalg.norm(p1 - p0)
+    a, n = _unit(p1 - p0), _normal(p1 - p0)
+    c0 = p0 + rod*L*a                                            # near end, the rod's side
+    c1 = c0 + case*L*a                                           # far end of the case
+    w = width/2
+    ax.add_patch(Polygon([c0 + w*n, c1 + w*n, c1 - w*n, c0 - w*n], closed=True,
+                         facecolor=facecolor, edgecolor=edgecolor, lw=LW, zorder=zorder))
+    for k in range(ticks):                                       # the scale, on one side
+        q = c0 + (0.2 + 0.6*k/max(ticks - 1, 1))*case*L*a + w*n
+        ax.plot(*zip(q, q - (0.3 if k % 2 == 0 else 0.18)*w*n), color=edgecolor, lw=0.8,
+                zorder=zorder + 0.1)
+    plate = c0 + (0.12 + 0.3*(1 - stretch))*case*L*a
+    coil(ax, plate, c1, coils=coils, width=1.1*w, color=EDGE, lw=1.1, zorder=zorder + 0.1)
+    ax.plot(*zip(plate + 0.8*w*n, plate - 0.8*w*n), color=EDGE, lw=2.2,
+            solid_capstyle='butt', zorder=zorder + 0.2)
+    ax.plot(*zip(p0, plate), color=EDGE, lw=1.6, zorder=zorder + 0.15)
+    if np.linalg.norm(p1 - c1) > 1e-9:
+        ax.plot(*zip(c1, p1), color=EDGE, lw=1.2, zorder=zorder)
+    return plate
+
+
 def helix_centres(d, p, n_active, n_closed=1):
     """Heights of the wire centre of a helical spring at each half turn, bottom coil first.
 
