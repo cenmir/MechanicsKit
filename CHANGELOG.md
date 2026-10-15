@@ -33,7 +33,7 @@ decide patch vs. minor before pushing.
 
 ---
 
-## [Unreleased]
+## [0.23.0] - 2026-10-15
 
 ### Added
 - `mechanicskit.friction`: coefficients of friction with a source per table. Material
