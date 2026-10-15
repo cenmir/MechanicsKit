@@ -10,6 +10,7 @@ MechanicsKit repo. **Read it before the first figure of a session.** Find it in 
 clone (`find ~ -path '*MechanicsKit/docs/figures.md' 2>/dev/null | head -1`), or fetch
 <https://raw.githubusercontent.com/cenmir/MechanicsKit/main/docs/figures.md>. A complete,
 runnable example is `examples/figures/bar_spring_figures.py` in the same repo.
+A shaded 3D figure of a machine or structure is the `scene3d` skill's job (`skills/scene3d/SKILL.md`).
 
 Needs `mechanicskit` 0.10 or later (`python -c "import mechanicskit as m; print(m.__version__)"`;
 install with `pip install git+https://github.com/cenmir/mechanicskit.git`), plus

@@ -293,7 +293,7 @@ Occlusion dominates because a hidden dimension is wrong, while a label on an edg
 
 # The agent loop
 
-The module is built for Claude Code to drive, with the person reviewing. The loop that produced the winch figure was:
+The module is built for Claude Code to drive, with the person reviewing. The loop below is packaged as the Claude Code skill `skills/scene3d/SKILL.md`; link that folder into `~/.claude/skills/` and Claude follows it whenever a 3D figure is asked for. The loop that produced the winch figure was:
 
 1. **Read the sketch or photo and the prompt** and write a spec: parameters from the dimensions given, parts from the primitive table, annotations for the forces and dimensions the problem needs.
 2. **Run** `python -m mechanicskit.scene3d spec.json` and **read** `report.json`.
