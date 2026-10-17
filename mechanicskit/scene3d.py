@@ -294,6 +294,13 @@ def wire(points, r):
 
 
 @primitive
+def step(path):
+    """Every solid in a STEP file, as modelled: a part from CAD drawn in its own coordinates.
+    A relative path is read from the folder the renderer runs in (the book root)."""
+    return list(b.import_step(str(path)).solids())
+
+
+@primitive
 def knob(p, dir, r, L):
     """A clamp knob or bolt head: a shaft of length L from p along dir with a domed end."""
     p, d = np.asarray(p, float), np.asarray(dir, float)
@@ -636,7 +643,7 @@ def annotate(ax, spec, P, cam):
         elif k == "line":
             p0, p1 = ev(a["p0"], P), ev(a["p1"], P)
             ls = {"centre": (0, (12, 3, 2, 3)), "dashed": (0, (5, 3)), "solid": "-"}[a.get("style", "centre")]
-            ax.plot(*cam(np.array([p0, p1])).T, color=sk.GREY, lw=a.get("lw", 0.7), ls=ls, zorder=5)
+            ax.plot(*cam(np.array([p0, p1])).T, color=a.get("color", sk.GREY), lw=a.get("lw", 0.7), ls=ls, zorder=5)
             if a.get("style", "centre") != "centre":  # centre lines are drawn through parts
                 samples[a["id"]] = np.linspace(p0, p1, 10)
         elif k == "point":

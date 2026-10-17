@@ -33,6 +33,36 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.24.0] - 2026-10-17
+
+### Added
+- `scene3d`: a `step` part, `{"kind": "step", "args": {"path": "..."}}`, that draws the solids
+  of a STEP file in their own coordinates, so a part modelled in CAD can be shown with the
+  annotations of a scene. The `line` annotation takes an optional `color`.
+- `sketch.ring_angle(N_sun, N_planet, N_ring, sun_angle, psi)`: the angle that meshes
+  `ring_gear` with planets placed by `planet_angle`.
+- `sketch.tyre_top(ax, centre, D, w, turn, angle)`: a wheel seen from above, a black tread
+  with a white stripe across it that runs over the top as the wheel turns, for top-view
+  animations of wheels at different speeds (the differential of a car in a corner).
+- `sketch.break_points(p0, p1, waves, amplitude)`: the points of a wavy break line, so that a
+  part cut off in a drawing (a plate, a shank, a thread section) can be filled up to the same
+  curve that `break_line` draws on it. `break_line` now uses it; its output is unchanged.
+- `sketch.dimension(..., outside=L)`: a short span drawn the drafting way, the dimension line
+  without heads and two arrows of length `L` coming in from outside (a crest flat P/8, a slice
+  dx).
+
+- `sketch_extra.bearing_section`, `bearing_geometry`, `bearing_end_view`: rolling and plain
+  bearings in section for bearing arrangement drawings (twelve kinds, load lines returned so
+  that a figure can carry them to the axis, `angle` and `tilt` for vertical and misaligned
+  shafts), with `stepped_shaft`, `section` (a hatched cut face) and `retaining_ring` for the
+  shaft and housing around them. Palette constants `BALL_STOPS`, `ROLLER_STOPS`, `BRONZE`,
+  `SECTION`.
+
+### Fixed
+- `sketch.planet_angle` claimed that its planets also mesh with `ring_gear` at
+  `angle=0`. They do not in general (the 15/15/45 set with the sun at 8 degrees had every
+  planet tooth on a ring tooth); the ring needs `ring_angle`.
+
 ## [0.23.0] - 2026-10-15
 
 ### Added

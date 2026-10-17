@@ -40,8 +40,8 @@ __all__ = [
     "gear", "hub",
     "box", "rounded_rect", "trapezoid", "ellipse", "cog", "annulus", "radial_load", "spline_outline", "polygon_outline",
     "force", "moment_vector", "angle", "right_angle", "dimension", "axes", "triad", "guide", "centreline", "rotation",
-    "curl", "radius", "leader", "arrow", "unit_vectors", "direction_line", "break_line",
-    "label", "gear_outline", "ring_gear", "planet_angle", "unit", "normal", "polar", "rot", "arc", "ccw",
+    "curl", "radius", "leader", "arrow", "unit_vectors", "direction_line", "break_line", "break_points",
+    "label", "gear_outline", "ring_gear", "planet_angle", "ring_angle", "unit", "normal", "polar", "rot", "arc", "ccw",
     "mirror_outline", "outward",
 ]
 
@@ -416,6 +416,38 @@ def ellipse(ax, centre, w, h, angle=0.0, facecolor=BODY, edgecolor=EDGE, zorder=
     return patch
 
 
+def tyre_top(ax, centre, D, w, turn=0.0, angle=0.0, stripe=0.12, color="black",
+             stripe_color="white", zorder=3):
+    """A wheel seen from above: its tread, ``D`` long and ``w`` wide, with a stripe
+    painted across it that shows the wheel turning.
+
+    ``turn`` is the wheel's angle of rotation in radians, 0 with the stripe on top;
+    a positive turn rolls the top forward, along the wheel's local +y, which
+    ``angle`` (degrees) turns away from the figure's +y. The stripe, ``stripe*D``
+    wide on the tread, sits at ``D/2 sin(turn)`` from the centre, foreshortened
+    by ``cos(turn)``, and is hidden while it is on the underside. Frame by frame,
+    it runs forward over the top and vanishes at the ends, faster the faster the
+    wheel turns.
+    """
+    c, R = _xy(centre), rot(angle)
+    r = 0.12*min(D, w)
+    tread = rounded_rect((-w/2, -D/2), w, D, r) @ R.T + c
+    patches = [Polygon(tread, closed=True, facecolor=color, edgecolor=color, lw=LW,
+                       zorder=zorder)]
+    ct, st = np.cos(turn), np.sin(turn)
+    if ct > 0:
+        y, h = D/2*st, stripe*D*ct
+        y0, y1 = max(y - h/2, -D/2 + r/2), min(y + h/2, D/2 - r/2)
+        if y1 > y0:
+            q = np.array([(-w/2 + 0.06*w, y0), (w/2 - 0.06*w, y0), (w/2 - 0.06*w, y1),
+                          (-w/2 + 0.06*w, y1)])
+            patches.append(Polygon(q @ R.T + c, closed=True, facecolor=stripe_color,
+                                   edgecolor="none", zorder=zorder + 0.1))
+    for p in patches:
+        ax.add_patch(p)
+    return patches
+
+
 def spline_outline(centre, r_major, r_minor, n=6, width=None, angle=90.0):
     """Outline of a straight-sided spline shaft (ISO 14 style): ``n`` teeth of
     ``width`` across, from the minor to the major radius, the first at ``angle``
@@ -633,13 +665,26 @@ def planet_angle(N_sun, N_planet, psi, sun_angle=0.0):
     angle ``psi`` (degrees) from a sun turned by ``sun_angle``, so that they mesh.
 
     A space of the planet faces the sun's tooth phase along the line of centres; the tooth
-    phases run in opposite senses at an external mesh. If the planets of a ring gear of
-    N_ring teeth are spaced so that (N_sun + N_ring)/K is whole, the same angle meshes
-    with ``ring_gear`` at ``angle=0`` as well.
+    phases run in opposite senses at an external mesh. The ring must then be turned by
+    ``ring_angle`` to mesh with the planets as well.
     """
     f_s = N_sun*np.radians(psi - 90.0 - sun_angle)/(2*np.pi)          # sun tooth phase towards psi
     th = np.radians(psi + 180.0 - 90.0) - 2*np.pi*(0.5 - f_s)/N_planet
     return np.degrees(th)
+
+
+def ring_angle(N_sun, N_planet, N_ring, sun_angle=0.0, psi=90.0):
+    """The angle (degrees) to give ``ring_gear`` so that it meshes with a planet placed by
+    ``planet_angle`` at the polar angle ``psi`` around a sun turned by ``sun_angle``.
+
+    At the internal mesh the tooth phases of planet and ring run in the same sense, so a
+    planet tooth displaced along its pitch circle by an arc faces a ring space displaced by
+    the same arc. When K planets are spaced evenly and (N_sun + N_ring)/K is whole, the
+    angle is the same for every planet, and one ring meshes with all of them.
+    """
+    th = planet_angle(N_sun, N_planet, psi, sun_angle)
+    f_p = N_planet*(psi - 90.0 - th)/360.0                            # planet tooth phase towards psi
+    return (psi - 90.0 - f_p*360.0/N_ring) % (360.0/N_ring)
 
 
 def hub(ax, centre, r, zorder=3):
@@ -716,7 +761,7 @@ def right_angle(ax, corner, d1, d2, size, color=GREY, lw=0.8, zorder=4):
 
 def dimension(ax, p0, p1, offset, text, color=GREY, fontsize=11, gap=0.02,
               text_side=1, zorder=3, text_offset=None, text_at=0.5, text_shift=(0, 0),
-              **label_kwargs):
+              outside=None, **label_kwargs):
     """A dimension between two points, drawn ``offset`` to the left of p0 to p1.
 
     Two extension lines run out to the dimension line, which carries a head
@@ -730,6 +775,10 @@ def dimension(ax, p0, p1, offset, text, color=GREY, fontsize=11, gap=0.02,
     moves it further, in data units. The value has a white box behind it, which
     interrupts the line the way a drawing does; ``bg=None`` gives the outline
     instead. Other keyword arguments go to ``label``.
+
+    ``outside`` (a length) draws a short span the drafting way: the line runs
+    between the extension lines without heads, and two arrows of that length
+    come in from outside, pointing at it (a crest flat P/8, a slice dx).
     """
     p0, p1 = _xy(p0), _xy(p1)
     nrm = _normal(p1 - p0)
@@ -739,9 +788,17 @@ def dimension(ax, p0, p1, offset, text, color=GREY, fontsize=11, gap=0.02,
         over = np.sign(offset)*0.6*gap
         for p, q in ((p0, q0), (p1, q1)):
             ax.plot(*zip(p + ext*nrm, q + over*nrm), color=color, lw=0.7, zorder=zorder)
-    ax.add_patch(FancyArrowPatch(q0, q1, arrowstyle="<|-|>", mutation_scale=9,
-                                 color=color, lw=0.8, shrinkA=0, shrinkB=0,
-                                 zorder=zorder))
+    if outside:
+        u = _unit(q1 - q0)
+        ax.plot(*zip(q0, q1), color=color, lw=0.8, zorder=zorder)
+        for q, s_ in ((q0, -1), (q1, 1)):
+            ax.add_patch(FancyArrowPatch(q + s_*outside*u, q, arrowstyle="-|>",
+                                         mutation_scale=9, color=color, lw=0.8, shrinkA=0,
+                                         shrinkB=0, zorder=zorder))
+    else:
+        ax.add_patch(FancyArrowPatch(q0, q1, arrowstyle="<|-|>", mutation_scale=9,
+                                     color=color, lw=0.8, shrinkA=0, shrinkB=0,
+                                     zorder=zorder))
     if not text:
         return
     at = q0 + text_at*(q1 - q0)
@@ -937,11 +994,22 @@ def direction_line(ax, p0, p1, head=True, color=EDGE, lw=1.2, head_length=None,
                              edgecolor=color, lw=lw, joinstyle="miter", zorder=zorder))
 
 
-def break_line(ax, p0, p1, waves=1.5, amplitude=0.06, color=EDGE, lw=1.0, zorder=4):
-    """A wavy break line from ``p0`` to ``p1``: where a part is cut off in the drawing."""
+def break_points(p0, p1, waves=1.5, amplitude=0.06, n=None):
+    """The points of a wavy break line from ``p0`` to ``p1``, as an (n, 2) array.
+
+    The wave starts and ends on the straight line p0 to p1 (for whole or half
+    ``waves``) and bulges ``amplitude`` to its left first. Use it as the cut-off
+    side of a filled part, so that the fill and the ``break_line`` drawn on it
+    follow the same curve.
+    """
     p0, p1 = _xy(p0), _xy(p1)
     L = np.linalg.norm(p1 - p0)
-    a, n = _unit(p1 - p0), _normal(p1 - p0)
-    t = np.linspace(0, 1, max(40, int(30*waves)))
-    pts = p0 + np.outer(t*L, a) + np.outer(amplitude*np.sin(2*np.pi*waves*t), n)
+    a, nrm = _unit(p1 - p0), _normal(p1 - p0)
+    t = np.linspace(0, 1, n or max(40, int(30*waves)))
+    return p0 + np.outer(t*L, a) + np.outer(amplitude*np.sin(2*np.pi*waves*t), nrm)
+
+
+def break_line(ax, p0, p1, waves=1.5, amplitude=0.06, color=EDGE, lw=1.0, zorder=4):
+    """A wavy break line from ``p0`` to ``p1``: where a part is cut off in the drawing."""
+    pts = break_points(p0, p1, waves, amplitude)
     return ax.plot(pts[:, 0], pts[:, 1], color=color, lw=lw, zorder=zorder)

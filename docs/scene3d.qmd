@@ -202,6 +202,7 @@ Each part has an `id`, a primitive `kind`, a `color` (a palette name or any matp
 | `bar_link` | `points, w, h, normal, round_ends` | rectangular link through a polyline, rounded at the joints; with two points and `round_ends: false`, a plain block in any orientation |
 | `wire` | `points, r` | bent round wire or rope through a polyline, smooth at the bends |
 | `knob` | `p, dir, r, L` | clamp knob, bolt head or eye: a shaft with a domed end |
+| `step` | `path` | every solid in a STEP file, in the file's own coordinates: a part modelled in CAD |
 
 The palette names are `steel` (`sk.STEEL`, machine parts), `body` (`sk.BODY`, links and arms), `block`, `rope`, `mass` and `ground`. These follow the book's figure standard in `docs/figures.md`.
 
@@ -219,7 +220,7 @@ Annotations are 3D objects. Their screen positions come from the same camera as 
 | `point` | `at, text, ms` | a dot with a label, for named points ($A$, $B$, $G$) |
 | `cog` | `at, size, text` | the centre-of-gravity symbol |
 | `arc` | `centre, axis, r, a0, a1, role, text` | an arc in the plane normal to `axis`: `rotation` (green, with head, default), `load` (red, a moment) or `angle` (thin grey, no head, black label, for a geometric angle such as $\theta$) |
-| `line` | `p0, p1, style, lw` | `centre` (dash-dot), `dashed` or `solid`, for axes, reference levels and extension lines |
+| `line` | `p0, p1, style, lw, color` | `centre` (dash-dot), `dashed` or `solid`, for axes, reference levels and extension lines; grey unless `color` is given |
 | `triad` | `at, length, labels, colors` | $x$, $y$, $z$ axes in red, green and blue, labels in the arrow's colour |
 
 Every annotation accepts `screen_offset`, a shift in screen millimetres. This is how labels are moved clear of edges once the checks have said where they collide.

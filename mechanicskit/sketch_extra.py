@@ -916,3 +916,388 @@ def out_of_plane(ax, p, r, into=True, color=sk.LOAD, lw=1.6, zorder=6):
                     solid_capstyle='round', zorder=zorder + 0.1)
     else:
         ax.add_patch(Circle(c, 0.28*r, facecolor=color, edgecolor='none', zorder=zorder + 0.1))
+
+
+# --- bearings in section ------------------------------------------------------------
+#
+# A rolling bearing is drawn the way catalogues and assembly drawings show it: cut
+# along the shaft axis, the rings solid, the rolling elements shaded. Every function
+# takes the true radii, so that a bearing, its shaft and its housing drawn with the
+# same axis line up, and draws both halves unless told otherwise.
+
+BALL_STOPS = ['#1f4f6e', '#5d93b8', '#d4e7f4']                     # rim to highlight
+ROLLER_STOPS = ['#33627f', '#9fc3da', '#e6f1f8', '#86aec8', '#33627f']
+BRONZE = '#d9b36c'                                                 # plain bearings
+SECTION = '#e4e7ea'                                                # a cut housing
+
+
+def _line_x(p, d, q, e):
+    """Intersection of the line p + s d with the line q + t e."""
+    A = np.array([d, -np.asarray(e, float)]).T
+    s, _ = np.linalg.solve(A, np.asarray(q, float) - np.asarray(p, float))
+    return np.asarray(p, float) + s*np.asarray(d, float)
+
+
+def _notched(x0, x1, y_back, y_l, y_r, centre, rn, outer, chamfer):
+    """A ring of the bearing between x0 and x1 (local frame, y the radius). Its back
+    face lies at ``y_back``, its working face at ``y_l`` on the left and ``y_r`` on the
+    right, and a raceway groove of radius ``rn`` about ``centre`` is cut into it.
+    ``outer`` is the ring above the rolling element."""
+    xc, yc = centre
+    c = chamfer
+    sgn = 1 if outer else -1
+    pts = [(x0 + c, y_back), (x1 - c, y_back), (x1, y_back - sgn*c), (x1, y_r)]
+    if rn is not None:
+        sr, sl = (y_r - yc)/rn, (y_l - yc)/rn
+        if outer:
+            t = np.linspace(np.arcsin(sr), np.pi - np.arcsin(sl), 40)
+        else:
+            t = np.linspace(np.arcsin(sr), -np.pi - np.arcsin(sl), 40)
+        pts += [(xc + rn*np.cos(a), yc + rn*np.sin(a)) for a in t]
+    pts += [(x0, y_l), (x0, y_back - sgn*c)]
+    return pts
+
+
+def _barrel(P, t, m, L, r, crown, n=30):
+    """A barrel roller about the centre ``P``: axis ``t``, across it ``m``, length
+    ``L``, radius ``r`` at the middle, falling by ``crown`` at the ends."""
+    u = np.linspace(-L/2, L/2, n)
+    k = crown/(L/2)**2
+    top = [P + a*t + (r - k*a*a)*m for a in u]
+    bot = [P + a*t - (r - k*a*a)*m for a in u[::-1]]
+    return np.array(top + bot)
+
+
+def bearing_geometry(kind, r_in, r_out, B, alpha=None, ribs='NU', inner=True):
+    """The parts of a bearing in section, in a local frame: x along the axis from the
+    bearing's mid-plane, y the radius, upper half only. Returns a dict with ``rings``
+    (polygons), ``balls`` ((centre, radius) pairs), ``rollers`` ((polygon, axis
+    direction) pairs), ``lines`` (extra line segments) and ``contact`` ((point, unit
+    direction) pairs: the load lines through the rolling elements, pointing from the
+    outer ring towards the inner ring). See ``bearing_section`` for the kinds."""
+    h = r_out - r_in
+    r_m = r_in + h/2
+    ch = 0.06*min(h, B)
+    g = {'rings': [], 'balls': [], 'rollers': [], 'lines': [], 'contact': []}
+
+    if kind in ('deep_groove', 'angular', 'four_point'):
+        a = np.radians({'deep_groove': 0, 'angular': 40, 'four_point': 35}[kind]
+                       if alpha is None else alpha)
+        rb = min(0.28*h, 0.38*B)
+        rn = 1.04*rb
+        u = np.array([np.sin(a), np.cos(a)])                # to the outer contact
+        C = np.array([0.0, r_m])
+        if kind == 'angular':
+            # deep shoulder of the outer ring on +x, of the inner ring on -x
+            o_l, o_r = r_m + 0.78*rb, r_m + 0.25*rb
+            i_l, i_r = r_m - 0.25*rb, r_m - 0.78*rb
+            co, ci = C - (rn - rb)*u, C + (rn - rb)*u
+            g['contact'].append((C, -u))
+        else:
+            o_l = o_r = r_m + 0.38*rb
+            i_l = i_r = r_m - 0.38*rb
+            up = np.array([0.0, 1.0])
+            co, ci = C - (rn - rb)*up, C + (rn - rb)*up
+            if kind == 'four_point':
+                g['contact'] += [(C, -u), (C, -u*[-1, 1])]
+            else:
+                g['contact'].append((C, -up))
+        g['rings'].append(_notched(-B/2, B/2, r_out, o_l, o_r, co, rn, True, ch))
+        g['rings'].append(_notched(-B/2, B/2, r_in, i_l, i_r, ci, rn, False, ch))
+        if kind == 'four_point':                            # the split inner ring
+            g['lines'].append(((0, r_in), (0, ci[1] - rn)))
+        g['balls'].append((C, rb))
+
+    elif kind == 'self_aligning':
+        rb = min(0.25*h, 0.22*B)
+        xa = max(1.05*rb, 0.24*B)
+        Rs = np.hypot(xa, r_m) + rb                          # the spherical outer raceway
+        t = np.linspace(np.arccos(B/2/Rs), np.arccos(-B/2/Rs), 60)
+        face = [(Rs*np.cos(s), Rs*np.sin(s)) for s in t]   # right to left
+        g['rings'].append([(-B/2 + ch, r_out), (B/2 - ch, r_out), (B/2, r_out - ch)]
+                          + face + [(-B/2, r_out - ch)])
+        rn = 1.04*rb
+        yi = r_m - 0.4*rb
+        pts = [(-B/2 + ch, r_in), (B/2 - ch, r_in), (B/2, r_in + ch), (B/2, yi)]
+        for xb in (xa, -xa):
+            s = (yi - (r_m + rn - rb))/rn
+            tt = np.linspace(np.arcsin(s), -np.pi - np.arcsin(s), 30)
+            pts += [(xb + rn*np.cos(q), r_m + rn - rb + rn*np.sin(q)) for q in tt]
+        pts += [(-B/2, yi), (-B/2, r_in + ch)]
+        g['rings'].append(pts)
+        for xb in (-xa, xa):
+            C = np.array([xb, r_m])
+            g['balls'].append((C, rb))
+            g['contact'].append((C, -C/np.linalg.norm(C)))
+
+    elif kind in ('cylindrical', 'needle'):
+        rr = (0.25 if kind == 'cylindrical' else 0.3)*h
+        L = (0.6 if kind == 'cylindrical' else 0.8)*B
+        gap = 0.03*B
+        yo, yi = r_m + rr, r_m - rr
+        rib = r_m + 0.2*rr, r_m - 0.2*rr
+        o_ribs = ribs in ('NU', 'NJ', 'NUP')
+        i_ribs = {'NU': (False, False), 'N': (True, True), 'NJ': (True, False),
+                  'NUP': (True, True)}[ribs]
+        if o_ribs:
+            xr = L/2 + gap
+            g['rings'].append([(-B/2 + ch, r_out), (B/2 - ch, r_out), (B/2, r_out - ch),
+                               (B/2, rib[0]), (xr, rib[0]), (xr, yo), (-xr, yo),
+                               (-xr, rib[0]), (-B/2, rib[0]), (-B/2, r_out - ch)])
+        else:
+            g['rings'].append(_notched(-B/2, B/2, r_out, yo, yo, (0, 0), None, True, ch))
+        if inner:
+            xr = L/2 + gap
+            pts = [(-B/2 + ch, r_in), (B/2 - ch, r_in), (B/2, r_in + ch)]
+            pts += [(B/2, rib[1]), (xr, rib[1]), (xr, yi)] if i_ribs[1] else [(B/2, yi)]
+            pts += [(-xr, yi), (-xr, rib[1]), (-B/2, rib[1])] if i_ribs[0] else [(-B/2, yi)]
+            pts += [(-B/2, r_in + ch)]
+            g['rings'].append(pts)
+        C = np.array([0.0, r_m])
+        g['rollers'].append((_barrel(C, np.array([1.0, 0]), np.array([0, 1.0]), L, rr,
+                                     0.0, n=2), np.array([1.0, 0])))
+        g['contact'].append((C, np.array([0, -1.0])))
+
+    elif kind == 'tapered':
+        # built with the large end of the rollers at +x; bearing_section mirrors it
+        a = np.radians(15 if alpha is None else alpha)
+        rr, L = 0.2*h, 0.55*B
+        r_m = r_in + 0.42*h                                 # low, so the cup keeps some wall
+        C = np.array([0.0, r_m])
+        phi = a
+        for _ in range(20):                                 # roller axis and half taper
+            th = np.arcsin(rr*np.sin(phi)/r_m)
+            phi = a - th
+        apex = np.array([-r_m/np.tan(phi), 0.0])
+        d_cup = np.array([np.cos(a), np.sin(a)])
+        d_cone = np.array([np.cos(phi - th), np.sin(phi - th)])
+        t = np.array([np.cos(phi), np.sin(phi)])
+        n = sk.normal(t)
+        e0, e1 = C - L/2*t, C + L/2*t                      # small and large end planes
+        roller = [_line_x(apex, d_cone, e0, n), _line_x(apex, d_cone, e1, n),
+                  _line_x(apex, d_cup, e1, n), _line_x(apex, d_cup, e0, n)]
+        g['rollers'].append((np.array(roller), t))
+        cup_y = lambda x: np.tan(a)*(x - apex[0])
+        g['rings'].append([(-B/2 + ch, r_out), (B/2 - ch, r_out), (B/2, r_out - ch),
+                           (B/2, cup_y(B/2)), (-B/2, cup_y(-B/2)), (-B/2, r_out - ch)])
+        gap = 0.03*B
+        big, small = e1 + gap*t, e0 - gap*t
+        p_big = _line_x(apex, d_cone, big, n)
+        p_small = _line_x(apex, d_cone, small, n)
+        y_big = p_big[1] + 1.2*rr
+        y_small = p_small[1] + 0.45*rr
+        q_big = _line_x(big, n, (0, y_big), (1, 0))
+        q_small = _line_x(small, n, (0, y_small), (1, 0))
+        g['rings'].append([(-B/2 + ch, r_in), (B/2 - ch, r_in), (B/2, r_in + ch),
+                           (B/2, y_big), q_big, p_big, p_small, q_small,
+                           (-B/2, y_small), (-B/2, r_in + ch)])
+        g['contact'].append((C, np.array([np.sin(a), -np.cos(a)])))
+
+    elif kind in ('spherical_roller', 'carb'):
+        if kind == 'carb':
+            rr, L = 0.25*h, 0.62*B
+            C = np.array([0.0, r_m])
+            crown, gap = 0.18*rr, 0.03*h
+            g['rollers'].append((_barrel(C, np.array([1.0, 0]), np.array([0, 1.0]), L, rr,
+                                         crown), np.array([1.0, 0])))
+            x = np.linspace(B/2, -B/2, 40)
+            k = crown/(L/2)**2
+            top = [(xi, r_m + rr + gap - k*xi*xi) for xi in x]
+            bot = [(xi, r_m - rr - gap + k*xi*xi) for xi in x]
+            g['rings'].append([(-B/2 + ch, r_out), (B/2 - ch, r_out), (B/2, r_out - ch)]
+                              + top + [(-B/2, r_out - ch)])
+            g['rings'].append([(-B/2 + ch, r_in), (B/2 - ch, r_in), (B/2, r_in + ch)]
+                              + bot + [(-B/2, r_in + ch)])
+            g['contact'].append((C, np.array([0, -1.0])))
+        else:
+            rr, L = 0.22*h, 0.36*B
+            xa = 0.23*B
+            gap = 0.03*h
+            centres = [np.array([-xa, r_m]), np.array([xa, r_m])]
+            Rs = np.hypot(xa, r_m) + rr
+            t = np.linspace(np.arccos(B/2/Rs), np.arccos(-B/2/Rs), 60)
+            face = [((Rs + gap)*np.cos(s), (Rs + gap)*np.sin(s)) for s in t]
+            g['rings'].append([(-B/2 + ch, r_out), (B/2 - ch, r_out), (B/2, r_out - ch)]
+                              + face + [(-B/2, r_out - ch)])
+            inner_face = []
+            for C in centres[::-1]:                         # right roller first
+                m = C/np.linalg.norm(C)
+                ax_t = np.array([m[1], -m[0]])
+                poly = _barrel(C, ax_t, m, L, rr, 0.12*rr)
+                g['rollers'].append((poly, ax_t))
+                g['contact'].append((C, -m))
+                u = np.linspace(L/2 + 0.04*B, -L/2 - 0.04*B, 20)
+                inner_face += [C + a*ax_t - (rr + gap)*m for a in u]
+            inner_face = np.array(inner_face)
+            # the centre rib between the rows and the lips at the ends
+            y_lip = r_m - 0.55*rr
+            pts = [(-B/2 + ch, r_in), (B/2 - ch, r_in), (B/2, r_in + ch),
+                   (B/2, min(y_lip, inner_face[0, 1]))]
+            pts += [tuple(p) for p in inner_face[:20]]
+            pts += [(0.02*B, r_m - 0.6*rr), (-0.02*B, r_m - 0.6*rr)]
+            pts += [tuple(p) for p in inner_face[20:]]
+            pts += [(-B/2, min(y_lip, inner_face[-1, 1])), (-B/2, r_in + ch)]
+            g['rings'].append(pts)
+
+    elif kind == 'thrust_ball':
+        # the shaft washer on -x, the housing washer on +x
+        tw = 0.28*B
+        rb = 0.3*B
+        rn = 1.04*rb
+        C = np.array([0.0, r_m])
+        clr = 0.06*h
+        for side in (-1, 1):
+            xs = side*B/2
+            xf = side*(B/2 - tw)
+            lo, hi = (r_in, r_out - clr) if side < 0 else (r_in + clr, r_out)
+            cx = side*(rn - rb)
+            a0 = np.arccos(np.clip((xf - cx)/rn, -1, 1))
+            # the groove: the part of the circle about (cx, r_m) inside the washer
+            tt = np.linspace(a0, 2*np.pi - a0, 30) if side < 0 else np.linspace(a0, -a0, 30)
+            groove = [(cx + rn*np.cos(q), r_m + rn*np.sin(q)) for q in tt]
+            k = -side*ch
+            pts = [(xs, lo + ch), (xs, hi - ch), (xs + k, hi), (xf, hi)] + groove \
+                + [(xf, lo), (xs + k, lo)]
+            g['rings'].append(pts)
+        g['balls'].append((C, rb))
+        g['contact'].append((C, np.array([-1.0, 0])))
+
+    elif kind == 'plain':
+        g['rings'].append([(-B/2, r_in), (B/2, r_in), (B/2, r_out), (-B/2, r_out)])
+
+    elif kind == 'linear_ball':
+        rb = 0.16*h
+        n_b = max(3, int(0.8*B/(2.2*rb)))
+        xs = np.linspace(-0.4*B + rb, 0.4*B - rb, n_b)
+        yb = r_in + rb
+        g['rings'].append([(-B/2 + ch, r_out), (B/2 - ch, r_out), (B/2, r_out - ch),
+                           (B/2, r_in + 0.6*rb), (0.42*B, r_in + 0.6*rb),
+                           (0.42*B, yb + 1.15*rb), (-0.42*B, yb + 1.15*rb),
+                           (-0.42*B, r_in + 0.6*rb), (-B/2, r_in + 0.6*rb),
+                           (-B/2, r_out - ch)])
+        for xb in xs:
+            g['balls'].append((np.array([xb, yb]), rb))
+        g['contact'].append((np.array([0.0, yb]), np.array([0, -1.0])))
+    else:
+        raise ValueError(f'unknown bearing kind {kind!r}')
+    return g
+
+
+def bearing_section(ax, x, r_in, r_out, B, kind='deep_groove', direction=1, alpha=None,
+                    ribs='NU', inner=True, axis_y=0.0, halves=(1, -1), contact=0.0,
+                    ring_color=sk.STEEL, angle=0.0, tilt=0.0, zorder=4):
+    """A rolling or plain bearing cut along the shaft axis.
+
+    The bearing sits with its mid-plane at ``x`` and its axis at ``axis_y``; ``r_in``
+    and ``r_out`` are its bore and outside radii, ``B`` its width. ``halves`` picks the
+    halves to draw: ``(1, -1)`` both, ``(1,)`` the upper one only.
+
+    ``kind`` is one of ``'deep_groove'``, ``'angular'`` (contact angle ``alpha``,
+    default 40 degrees), ``'four_point'``, ``'self_aligning'`` (ball), ``'cylindrical'``
+    (``ribs`` 'NU', 'N', 'NJ' or 'NUP' say which ring carries the ribs that guide the
+    rollers), ``'needle'`` (``inner=False`` runs the needles on the shaft),
+    ``'tapered'`` (cup angle ``alpha``, default 15 degrees), ``'spherical_roller'``,
+    ``'carb'`` (toroidal roller), ``'thrust_ball'``, ``'plain'`` (a bushing, in
+    bronze) and ``'linear_ball'`` (a ball bushing for a linear guide, seen along the
+    rod).
+
+    ``angle`` turns the whole bearing (degrees, anticlockwise) about the point where its
+    mid-plane meets the axis, for a vertical shaft. ``tilt`` turns only the inner ring
+    and the rolling elements, with the shaft, while the outer ring (the first ring of a
+    thrust bearing) stays in the housing: a misaligned shaft in a self-aligning bearing.
+
+    ``direction`` (+1 or -1) is the axial direction of the force on the shaft that a
+    one-way bearing (angular, tapered, thrust) carries; its load line then meets the
+    axis on the opposite side. ``contact`` > 0 draws the load lines as dash-dot lines
+    reaching that far either side of each rolling element. Returns the load lines
+    in drawing coordinates as (point, unit direction) pairs, upper half first, so a
+    figure can extend them to the axis.
+    """
+    flip = direction if kind != 'tapered' else -direction
+    if kind == 'thrust_ball':
+        flip = direction
+    g = bearing_geometry(kind, r_in, r_out, B, alpha, ribs, inner)
+    out = []
+    R_all, R_in = sk.rot(angle), sk.rot(angle + tilt)
+    O = np.array([x, axis_y])
+    for s in halves:
+        def T(p, s=s, R=R_in):
+            p = np.asarray(p, float)
+            return O + R @ np.array([flip*p[0], s*p[1]])
+
+        def Td(d, s=s):
+            return R_in @ np.array([flip*d[0], s*d[1]])
+
+        face = BRONZE if kind == 'plain' else ring_color
+        for k, poly in enumerate(g['rings']):
+            R = R_all if k == 0 else R_in
+            sk.body(ax, [T(p, R=R) for p in poly], facecolor=face, edgecolor=sk.EDGE,
+                    zorder=zorder)
+        for p, q in g['lines']:
+            P, Q = T(p), T(q)
+            ax.plot([P[0], Q[0]], [P[1], Q[1]], color=sk.EDGE, lw=sk.LW, zorder=zorder + 0.1)
+        for c, r in g['balls']:
+            sphere(ax, T(c), r, stops=BALL_STOPS, zorder=zorder + 0.2)
+        for poly, t in g['rollers']:
+            shade(ax, [T(p) for p in poly], ROLLER_STOPS, sk.normal(Td(t)),
+                  zorder=zorder + 0.2)
+        for c, d in g['contact']:
+            P, D = T(c), sk.unit(Td(d))
+            out.append((P, D))
+            if contact > 0:
+                sk.centreline(ax, P - contact*D, P + contact*D, zorder=zorder + 0.5)
+    return out
+
+
+def retaining_ring(ax, x, r, w, h, axis_y=0.0, internal=False, halves=(1, -1),
+                   zorder=5):
+    """A retaining ring (circlip) in its groove at ``x``: on a shaft of radius ``r``,
+    or with ``internal=True`` in a bore of radius ``r``. ``w`` is the ring's thickness
+    along the axis and ``h`` its radial height; two fifths of it sit in the groove."""
+    for s in halves:
+        y0 = r - 0.4*h if not internal else r - 0.6*h
+        y = axis_y + s*y0 if s > 0 else axis_y - (y0 + h)
+        sk.box(ax, (x - w/2, y), w, h, facecolor='#4a4f55', edgecolor=sk.EDGE,
+               zorder=zorder)
+
+
+def section(ax, points, facecolor=SECTION, hatch='////', hatch_color='0.55',
+            zorder=2, mirror_y=None):
+    """A cut face of a housing, a cover or a spacer: ``points`` filled and hatched,
+    the hatch in a lighter grey than the black outline. ``mirror_y`` draws the mirror
+    image about the line y = mirror_y as well, for the lower half of a turned part."""
+    polys = [np.asarray(points, float)]
+    if mirror_y is not None:
+        m = polys[0].copy()
+        m[:, 1] = 2*mirror_y - m[:, 1]
+        polys.append(m)
+    for pts in polys:
+        ax.add_patch(Polygon(pts, closed=True, facecolor=facecolor, edgecolor=hatch_color,
+                             hatch=hatch, lw=0, zorder=zorder))
+        ax.add_patch(Polygon(pts, closed=True, facecolor='none', edgecolor=sk.EDGE,
+                             lw=sk.LW, zorder=zorder + 0.01))
+
+
+def stepped_shaft(ax, steps, axis_y=0.0, stops=STEEL_STOPS, zorder=3):
+    """A turned shaft seen from the side, not cut: ``steps`` is a list of
+    ``(x0, x1, r)``, one cylinder per step, each shaded across its diameter. Shafts,
+    pins and bolts stay uncut in an assembly section, as in a drawing."""
+    for x0, x1, r in steps:
+        shaded_rect(ax, (x0, axis_y - r), x1 - x0, 2*r, stops=stops, axis='y',
+                    zorder=zorder)
+
+
+def bearing_end_view(ax, centre, r_in, r_out, n=9, angle=0.0, zorder=4):
+    """A ball bearing seen along its axis: inner and outer ring, ``n`` balls on the
+    pitch circle, the first at ``angle`` degrees. Returns the pitch radius and the ball
+    radius."""
+    c = np.asarray(centre, float)
+    h = r_out - r_in
+    r_m, rb = r_in + h/2, 0.3*h
+    sk.annulus(ax, c, r_in, r_m - 0.55*rb, facecolor=sk.STEEL, zorder=zorder)
+    sk.annulus(ax, c, r_m + 0.55*rb, r_out, facecolor=sk.STEEL, zorder=zorder)
+    for k in range(n):
+        a = np.radians(angle + 360*k/n)
+        sphere(ax, c + r_m*np.array([np.cos(a), np.sin(a)]), rb, stops=BALL_STOPS,
+               zorder=zorder + 0.2)
+    return r_m, rb

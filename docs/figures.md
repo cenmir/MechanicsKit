@@ -57,6 +57,7 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `sk.box(ax, xy, w, h, angle, centred)` | a block or crate: corner (or centre) and size, turned |
 | `sk.trapezoid(ax, centre, w_bottom, w_top, h, angle)` | a wedge or a pad |
 | `sk.ellipse(ax, centre, w, h, angle)` | a disc or a wheel seen at an angle |
+| `sk.tyre_top(ax, centre, D, w, turn, angle)` | a wheel seen from above, black, with a white stripe that runs over the tread as `turn` grows: shows a wheel spinning in a top-view animation |
 | `sk.cog(ax, p, r)` | the centre-of-mass symbol, a quartered circle |
 | `sk.annulus(ax, centre, r_in, r_out, a0, a1, hatch)` | a ring or a ring segment: a hub, a tube, a bearing ring in section |
 | `sk.radial_load(ax, centre, r, angles, length, side)` | a pressure on a circle, arrows ending on it from outside (a shaft) or inside (a bore); `length` per angle draws a distribution |
@@ -68,7 +69,7 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `sk.right_angle(ax, corner, d1, d2, size)` | the square marking a right angle between directions `d1` and `d2` |
 | `sk.thread_profile(x0, x1, P, r_minor, r_major)` | ISO 68-1 basic thread profile in an axial section, as points |
 | `sk.helix(ax, xc, r, y0, y1, lead, back=False)` | a right-hand helix on a cylinder seen from the side |
-| `sk.dimension(ax, p0, p1, offset, text, gap, text_side, text_offset, text_at, text_shift)` | a dimension with extension lines, `offset` to the left of p0→p1; `offset=0` marks the span on p0→p1 itself with no extension lines; `text_offset` puts the value that far to the left of the line, `text_at` that fraction along it |
+| `sk.dimension(ax, p0, p1, offset, text, gap, text_side, text_offset, text_at, text_shift)` | a dimension with extension lines, `offset` to the left of p0→p1; `offset=0` marks the span on p0→p1 itself with no extension lines; `text_offset` puts the value that far to the left of the line, `text_at` that fraction along it; `outside=L` draws a short span with two arrows of length L pointing in from outside |
 | `sk.axes(ax, origin, length, angle_deg, labels)` | a pair of coordinate axes |
 | `sk.triad(ax, origin, dirs, labels, length, gap, offsets)` | axes along any directions, each letter past its tip, clear of the head |
 | `sk.unit_vectors(ax, p, [(dir, label, offset), ...], length)` | black unit vectors, such as e_t and e_n |
@@ -77,6 +78,7 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `sk.centreline(ax, p0, p1)` | a dash-dot centre line |
 | `sk.direction_line(ax, p0, p1, head=True)` | a dashed line of action with an open triangular head |
 | `sk.break_line(ax, p0, p1, waves, amplitude)` | a wavy line where a part is cut off |
+| `sk.break_points(p0, p1, waves, amplitude)` | the points of that wavy line, to fill a cut-off part up to it |
 | `sk.rotation(ax, centre, r, a0, a1)` | a green curved arrow; `a1 < a0` for clockwise |
 | `sk.curl(ax, centre, rx, ry, a0, a1, back_zorder=None)` | a curved arrow on an ellipse: a torque about a shaft seen from the side, or wrapping it with the back half hidden |
 | `sk.radius(ax, centre, r, deg, text, at)` | an arrow from the centre out to the radius |
@@ -95,8 +97,14 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `shaded_bar(ax, p0, p1, width, stops)` | a round-ended bar shaded across its thickness, like a cylinder |
 | `shaded_rect(ax, xy, w, h, stops, axis)` | a rectangle shaded along x or y |
 | `hex_nut(ax, face, direction, e, m)` | a hex nut or bolt head from the side, across the corners: blue `NUT_STOPS` shading, face edges at ±e/4, 30° chamfer lines and arcs; the bolt end is a `sk.rounded_rect` under it |
+| `bearing_section(ax, x, r_in, r_out, B, kind, direction, alpha, ...)` | a rolling or plain bearing cut along the shaft axis, both halves, rings solid, balls and rollers shaded: deep groove, angular, four-point, self-aligning, cylindrical (NU/N/NJ/NUP), needle, tapered, spherical roller, CARB, thrust ball, plain, linear ball; `contact=` draws the load lines and the call returns them; `angle=` turns it, `tilt=` tilts only the inner ring and rolling elements |
+| `bearing_end_view(ax, centre, r_in, r_out, n)` | a ball bearing seen along its axis |
+| `stepped_shaft(ax, steps, axis_y)` | a turned shaft from the side, uncut, one shaded cylinder per `(x0, x1, r)` |
+| `section(ax, points, hatch=, mirror_y=)` | a cut face of a housing or cover: hatched in light grey under a black outline, optionally mirrored for the lower half |
+| `retaining_ring(ax, x, r, w, h, internal=)` | a circlip in its groove on a shaft or in a bore |
 | `sk.ring_gear(ax, c, N, m, angle, rim)` | an internal gear; a space on +y at angle 0 |
 | `sk.planet_angle(N_s, N_p, psi, sun_angle)` | the angle that meshes a planet at psi with the sun; `sk.gear(..., warp=f)` bends a gear (flexspline) |
+| `sk.ring_angle(N_s, N_p, N_r, sun_angle)` | the angle to give `ring_gear` so it meshes with those planets; the ring at angle 0 generally does not |
 | `bevel_section(ax, apex, axis, delta_deg, A0, b, m)` | a straight bevel gear cut through its axis: tooth zone between the back and front cones with tip and root lines running to the apex, the body under it; returns the pitch, tip and root points and the generator and normal per side |
 | `out_of_plane(ax, p, r, into=True, color)` | a force or velocity normal to the page: a circle with a cross (into the page) or a dot (out of it) |
 | `STEEL_STOPS`, `TAN_STOPS`, `BRASS_STOPS`, `DARK_STEEL_STOPS`, `CHROME_STOPS` | gradient stops: dark edge, light band, dark edge |
