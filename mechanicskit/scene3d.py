@@ -284,13 +284,10 @@ def wire(points, r):
     """A bent round wire or rod through a polyline of points, with a ball at every
     joint so the bends read as smooth (wire brackets, hooks, springs drawn straight)."""
     pts = [np.asarray(q, float) for q in points]
-    s = None
-    for p0, p1 in zip(pts[:-1], pts[1:]):
-        seg = _rod(p0, p1, r)
-        s = seg if s is None else s.fuse(seg)
-    for q in pts:
-        s = s.fuse(b.Solid.make_sphere(r, b.Plane(origin=tuple(q))))
-    return s.clean()
+    segs = [_rod(p0, p1, r) for p0, p1 in zip(pts[:-1], pts[1:])]
+    balls = [b.Solid.make_sphere(r, b.Plane(origin=tuple(q))) for q in pts]
+    # a fuzzy fuse: an exact one can drop the rod and keep only an end ball
+    return segs[0].fuse(*segs[1:], *balls, tol=1e-3).clean()
 
 
 @primitive
@@ -793,6 +790,14 @@ def render(spec, P, parts, cam, out, width=5.2):
     ax.add_collection(LineCollection(edges["outline"], colors="0.1", linewidths=0.9, zorder=3,
                                      capstyle="round"))
     samples = annotate(ax, spec, P, cam)
+    # grow the frame to the annotations, so an arrow or dimension past the solids is not clipped
+    marks = [cam(v).reshape(-1, 2) for v in samples.values()]
+    marks += [np.reshape(anchor, (-1, 2)) for _, anchor in ax._s3d_anchors]
+    if marks:
+        m = np.vstack(marks)
+        x0, y0 = np.minimum((x0, y0), m.min(0) - 30)
+        x1, y1 = np.maximum((x1, y1), m.max(0) + 30)
+        fig.set_size_inches(width, width*(y1 - y0)/(x1 - x0))
     ax.set_xlim(x0, x1); ax.set_ylim(y0, y1)
     report = {"camera": {"az": cam.az, "el": cam.el},
               "occluded_fraction": occlusion(solids, cam, samples),

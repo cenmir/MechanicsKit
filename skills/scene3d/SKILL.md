@@ -72,6 +72,8 @@ spec. Bump the version before pushing.
 - The first camera guess is often on the wrong side; check one known edge direction in
   the render against the source before polishing labels.
 - An arc or label radius equal to a link length lands the label on the joint (θ₁ on B).
+- `screen_offset`, `text_gap` and the frame margin are in model units, not paper mm: a
+  6 m scene (spec in mm) needs label offsets of 200 to 300.
 - A 16-bit PNG (ImageMagick `montage` output) draws blank in xelatex; convert to 8-bit.
 - Never `quarto render` while a book preview runs; build the guide's PDF with pandoc.
 

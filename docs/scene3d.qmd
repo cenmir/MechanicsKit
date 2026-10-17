@@ -223,7 +223,7 @@ Annotations are 3D objects. Their screen positions come from the same camera as 
 | `line` | `p0, p1, style, lw, color` | `centre` (dash-dot), `dashed` or `solid`, for axes, reference levels and extension lines; grey unless `color` is given |
 | `triad` | `at, length, labels, colors` | $x$, $y$, $z$ axes in red, green and blue, labels in the arrow's colour |
 
-Every annotation accepts `screen_offset`, a shift in screen millimetres. This is how labels are moved clear of edges once the checks have said where they collide.
+Every annotation accepts `screen_offset`, a shift on the page in the units of the model (millimetres of the scene as projected, not of the printed page), so a scene several metres across needs offsets of a few hundred. This is how labels are moved clear of edges once the checks have said where they collide.
 
 ## Cameras, light and the final pick
 

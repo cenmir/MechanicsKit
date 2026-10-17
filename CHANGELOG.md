@@ -33,6 +33,15 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.24.1] - 2026-10-17
+
+### Fixed
+- `scene3d`: the frame of a render grows to hold every annotation, so a force arrow, a
+  dimension or a dashed line that reaches past the solids (a free body diagram with the
+  supports removed) is no longer clipped.
+- `scene3d`: a `wire` with one straight segment kept only its end ball and lost the rod; the
+  pieces are now joined with a fuzzy fuse.
+
 ## [0.24.0] - 2026-10-17
 
 ### Added
