@@ -79,6 +79,7 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `sk.direction_line(ax, p0, p1, head=True)` | a dashed line of action with an open triangular head |
 | `sk.break_line(ax, p0, p1, waves, amplitude)` | a wavy line where a part is cut off |
 | `sk.break_points(p0, p1, waves, amplitude)` | the points of that wavy line, to fill a cut-off part up to it |
+| `sk.bar_outline(steps, ends, waves, amplitude, axis_y)` | the outline of a straight or stepped bar along x, each end `'flat'`, `'round'` or `'cut'`: a piece of a bar in a free body diagram |
 | `sk.rotation(ax, centre, r, a0, a1)` | a green curved arrow; `a1 < a0` for clockwise |
 | `sk.curl(ax, centre, rx, ry, a0, a1, back_zorder=None)` | a curved arrow on an ellipse: a torque about a shaft seen from the side, or wrapping it with the back half hidden |
 | `sk.radius(ax, centre, r, deg, text, at)` | an arrow from the centre out to the radius |
@@ -99,7 +100,8 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `hex_nut(ax, face, direction, e, m)` | a hex nut or bolt head from the side, across the corners: blue `NUT_STOPS` shading, face edges at ±e/4, 30° chamfer lines and arcs; the bolt end is a `sk.rounded_rect` under it |
 | `bearing_section(ax, x, r_in, r_out, B, kind, direction, alpha, ...)` | a rolling or plain bearing cut along the shaft axis, both halves, rings solid, balls and rollers shaded: deep groove, angular, four-point, self-aligning, cylindrical (NU/N/NJ/NUP), needle, tapered, spherical roller, CARB, thrust ball, plain, linear ball; `contact=` draws the load lines and the call returns them; `angle=` turns it, `tilt=` tilts only the inner ring and rolling elements |
 | `bearing_end_view(ax, centre, r_in, r_out, n)` | a ball bearing seen along its axis |
-| `stepped_shaft(ax, steps, axis_y)` | a turned shaft from the side, uncut, one shaded cylinder per `(x0, x1, r)` |
+| `stepped_shaft(ax, steps, axis_y, ends)` | a turned shaft from the side, one shaded, outlined cylinder per `(x0, x1, r)`, so every change of diameter shows its edge; `ends` as in `sk.bar_outline` for a cut piece |
+| `face_stress(ax, x, r, side, N, sigma)` | the normal stress on a cut face seen from the side: thin green arrows over the face, the resultant `N` on the axis, drawn positive out of the face (`side` +1 faces right) |
 | `section(ax, points, hatch=, mirror_y=)` | a cut face of a housing or cover: hatched in light grey under a black outline, optionally mirrored for the lower half |
 | `retaining_ring(ax, x, r, w, h, internal=)` | a circlip in its groove on a shaft or in a bore |
 | `sk.ring_gear(ax, c, N, m, angle, rim)` | an internal gear; a space on +y at angle 0 |
@@ -112,7 +114,11 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `dot(ax, p, ms)` | a black point |
 | `circled(ax, xy, text)` | a green number in a circle, to tag bodies in a free body diagram |
 | `HALO` | the white outline, for raw `ax.text`: `path_effects=HALO` |
-| `support_pin`, `support_roller`, `support_rollers`, `support_slider`, `pedestal`, `wall`, `hatched_wall`, `sliding_block`, `bracket` | supports and blocks on the gradient ground; `angle` turns the pin, roller and slider supports |
+| `support_pin`, `support_roller`, `support_rollers`, `support_slider`, `pedestal`, `wall`, `hatched_wall`, `sliding_block`, `bracket` | supports and blocks on the gradient ground; `angle` turns the pin, roller and slider supports and the pedestal (`pedestal(..., angle=180)` is a lug hanging from a ceiling) |
+| `i_beam(ax, p0, p1, h, tf)` | a rolled I-beam from the side: web shaded across the depth, flange bands `tf` thick along both faces |
+| `clevis(ax, pin, direction, w, L)` / `CLEVIS_STOPS` | a rod-end fork from the side, rounded about its pin, running `L` along `direction`; returns where the rod starts |
+| `clevis_rod(ax, p0, p1, d, w, L, ends)` | a tie rod or hanger between two pins, a clevis at each end, the rod in `CHROME_STOPS`; `ends=(True, False)` cuts it flat at `p1`, the stub in a free body diagram |
+| `line_load(ax, p0, p1, height, n, text, q, inset)` | a distributed load on the edge p0→p1, arrows in from its left ending on it, tails joined; `q=(0, 1)` a triangular load, `inset` (or a pair) keeps the arrows clear of a rod at an end; label in the load's colour |
 | `Proj(ex, ey, ez)`, `Proj.from_view(d, up)` | a fixed axonometric projection for 3D figures, given by the page images of the unit vectors or by a viewing direction, with `.axes`, `.force` and `.arc` |
 | `tone(base, normal, light)` | a face colour lit from `light`, for shaded 3D faces |
 | `vcylinder`, `rod3d`, `sphere`, `box3d`, `thread3d`, `ring`, `speckle` | 3D solids for `Proj` figures |

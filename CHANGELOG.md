@@ -33,6 +33,27 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.25.0] - 2026-10-18
+
+### Added
+- `sketch.bar_outline(steps, ends, waves, amplitude, axis_y)`: the side-view outline of a
+  straight or stepped bar, each end `'flat'`, `'round'` or `'cut'` (a break wave), for a
+  part or a piece of one in a free body diagram. The normal stress animations of the book
+  draw their pieces with it too.
+- `sketch_extra.face_stress(ax, x, r, side, N, sigma)`: the normal stress on a cut face of
+  a bar seen from the side, thin arrows over the face and the resultant on the axis, drawn
+  positive (out of the face), green.
+- `sketch_extra.i_beam`, `clevis` with `CLEVIS_STOPS`, `clevis_rod` and `line_load`: a
+  rolled beam from the side, a rod-end fork, a tie rod with a fork at each end, and a
+  distributed load with uniform or linear intensity.
+
+### Changed
+- `sketch_extra.stepped_shaft(..., ends=)`: the ends of the shaft take the kinds of
+  `bar_outline`, so a cut piece of a stepped bar keeps one shaded, outlined cylinder per
+  step and with it the edge at every change of diameter.
+- `sketch_extra.pedestal(..., angle=)`: turns the pedestal about its pin; `angle=180` hangs
+  it from a ceiling.
+
 ## [0.24.1] - 2026-10-17
 
 ### Fixed

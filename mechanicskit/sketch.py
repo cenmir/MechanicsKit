@@ -41,6 +41,7 @@ __all__ = [
     "box", "rounded_rect", "trapezoid", "ellipse", "cog", "annulus", "radial_load", "spline_outline", "polygon_outline",
     "force", "moment_vector", "angle", "right_angle", "dimension", "axes", "triad", "guide", "centreline", "rotation",
     "curl", "radius", "leader", "arrow", "unit_vectors", "direction_line", "break_line", "break_points",
+    "bar_outline",
     "label", "gear_outline", "ring_gear", "planet_angle", "ring_angle", "unit", "normal", "polar", "rot", "arc", "ccw",
     "mirror_outline", "outward",
 ]
@@ -1007,6 +1008,40 @@ def break_points(p0, p1, waves=1.5, amplitude=0.06, n=None):
     a, nrm = _unit(p1 - p0), _normal(p1 - p0)
     t = np.linspace(0, 1, n or max(40, int(30*waves)))
     return p0 + np.outer(t*L, a) + np.outer(amplitude*np.sin(2*np.pi*waves*t), nrm)
+
+
+def bar_outline(steps, ends=('flat', 'flat'), waves=1.0, amplitude=0.06, axis_y=0.0, n=24):
+    """The side-view outline of a straight or stepped bar along x, as an (n, 2) array.
+
+    ``steps`` is a list of ``(x0, x1, r)``, one per segment of half-height ``r``, in
+    order along x. Each of ``ends`` (left, right) is ``'flat'``, ``'round'`` (a half
+    circle of the end radius, inside the segment) or ``'cut'`` (a ``break_points``
+    wave): a whole part, or a piece of one in a free body diagram. The outline runs
+    anticlockwise from the bottom of the left end, ready for ``body`` or
+    ``sketch_extra.shade``.
+    """
+    y = axis_y
+    top = [p for x0, x1, r in steps for p in ((x0, y + r), (x1, y + r))]
+    (xa, _, ra), (_, xb, rb) = steps[0], steps[-1]
+
+    def end(x, r, side):
+        """The end at x, from top to bottom; side +1 is the right end, -1 the left."""
+        kind = ends[(side + 1)//2]
+        if kind == 'round':
+            a = np.linspace(np.pi/2, np.pi/2 - side*np.pi, n)    # over the outer side
+            return np.column_stack([x - side*r + r*np.cos(a), y + r*np.sin(a)])
+        if kind == 'cut':
+            return break_points((x, y + r), (x, y - r), waves, amplitude)
+        return np.array([(x, y + r), (x, y - r)], float)
+
+    if ends[0] == 'round':
+        top[0] = (xa + ra, y + ra)
+    if ends[1] == 'round':
+        top[-1] = (xb - rb, y + rb)
+    top = np.array(top, float)
+    bottom = (top*(1, -1) + (0, 2*y))[::-1]
+    clockwise = np.vstack([end(xa, ra, -1)[::-1], top, end(xb, rb, +1), bottom])
+    return clockwise[::-1]
 
 
 def break_line(ax, p0, p1, waves=1.5, amplitude=0.06, color=EDGE, lw=1.0, zorder=4):

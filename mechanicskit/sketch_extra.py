@@ -277,14 +277,19 @@ def support_slider(ax, p, base=0.42, half=0.22, wheel=0.065, wheel_at=0.12, wall
     sk.pin(ax, p, r, zorder=5)
 
 
-def pedestal(ax, c, w, h, ground_w=None, depth=None, zorder=1):
+def pedestal(ax, c, w, h, ground_w=None, depth=None, angle=0.0, zorder=1):
     """A pin pedestal standing on the floor under ``c``: a trapezoid ``h`` high whose
-    foot is ``2w`` wide, on a strip of ground."""
+    foot is ``2w`` wide, on a strip of ground.
+
+    ``angle`` turns it about ``c``: 180 hangs it from a ceiling as the lug that
+    carries the upper pin of a hanger rod, 90 or -90 fixes it to a wall.
+    """
     y0 = c[1] - h
     gw = 2.6*w if ground_w is None else ground_w
-    ground(ax, [(c[0] - gw/2, y0), (c[0] + gw/2, y0)], depth=0.35*h if depth is None else depth)
-    sk.body(ax, [(c[0] - w, y0), (c[0] + w, y0), (c[0] + 0.45*w, c[1]),
-                 (c[0] - 0.45*w, c[1])], zorder=zorder)
+    ground(ax, _turn([(c[0] - gw/2, y0), (c[0] + gw/2, y0)], c, angle),
+           depth=0.35*h if depth is None else depth)
+    sk.body(ax, _turn([(c[0] - w, y0), (c[0] + w, y0), (c[0] + 0.45*w, c[1]),
+                       (c[0] - 0.45*w, c[1])], c, angle), zorder=zorder)
 
 
 def wall(ax, p, half_height=0.9, solid='left', depth=0.28):
@@ -314,6 +319,116 @@ def bracket(ax, base_x, tip, base_half=0.09, tip_half=0.045, zorder=2):
     x, y = tip
     sk.body(ax, [(base_x, y + base_half), (base_x, y - base_half), (x, y - tip_half),
                  (x, y + tip_half)], zorder=zorder)
+
+
+# --- beams, rods and line loads ------------------------------------------------------
+
+CLEVIS_STOPS = ['#7d95b8', '#b7c9e3', '#dce6f3', '#a5bbdb', '#7890b2']   # a forged fork
+
+
+def i_beam(ax, p0, p1, h, tf=None, stops=STEEL_STOPS, edgecolor=sk.EDGE, lw=sk.LW,
+           zorder=2):
+    """A rolled I-beam (wide-flange section) seen from the side, from ``p0`` to ``p1``.
+
+    ``p0`` and ``p1`` are the ends of its centre line and ``h`` the depth of the
+    section. The flanges are the bands ``tf`` thick (default ``0.12*h``) along both
+    faces, the web between them is shaded across the depth with ``stops``, so the
+    part reads as a steel beam and not as a flat plate. Returns the outline patch.
+    """
+    p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
+    n = sk.normal(p1 - p0)
+    tf = 0.12*h if tf is None else tf
+    a = h/2
+    outline = [p0 - a*n, p1 - a*n, p1 + a*n, p0 + a*n]
+    patch = shade(ax, outline, stops, -n, edgecolor=edgecolor, lw=lw, zorder=zorder)
+    stop_list = _stop_list(stops)
+    light = stop_list[len(stop_list)//2][1]
+    for s in (1, -1):                              # the flanges, light bands on the faces
+        band = [p0 + s*a*n, p1 + s*a*n, p1 + s*(a - tf)*n, p0 + s*(a - tf)*n]
+        sk.body(ax, band, facecolor=light, edgecolor=edgecolor, zorder=zorder + 0.01)
+    return patch
+
+
+def clevis(ax, pin, direction, w, L=None, stops=CLEVIS_STOPS, pin_r=None,
+           edgecolor=sk.EDGE, lw=sk.LW, zorder=4):
+    """A clevis (rod-end fork) seen from the side, around the pin at ``pin``.
+
+    The fork is ``w`` wide, rounded about the pin, and runs ``L`` (default
+    ``2.1*w``) along ``direction`` to where the rod is screwed in; a line across at
+    three quarters of that marks the solid head of the fork. The pin is a white
+    disc of radius ``pin_r`` (default ``0.3*w``) with its centre dotted. Returns
+    the centre of the fork's far end, where the rod starts.
+    """
+    c = np.asarray(pin, float)
+    u = sk.unit(np.asarray(direction, float))
+    v = sk.normal(u)
+    L = 2.1*w if L is None else L
+    r = w/2
+    t = np.linspace(np.pi/2, 3*np.pi/2, 24)
+    pts = [c + L*u + r*v] + [c + r*(np.cos(s)*u + np.sin(s)*v) for s in t] + [c + L*u - r*v]
+    shade(ax, pts, stops, v, edgecolor=edgecolor, lw=lw, zorder=zorder)
+    head = c + 0.75*L*u
+    ax.plot(*zip(head - r*v, head + r*v), color=edgecolor, lw=0.8*lw, zorder=zorder + 0.01)
+    sk.pin(ax, c, 0.3*w if pin_r is None else pin_r, zorder=zorder + 0.02)
+    dot(ax, c, 2.5, zorder=zorder + 0.03)
+    return c + L*u
+
+
+def clevis_rod(ax, p0, p1, d, w=None, L=None, ends=(True, True), stops=CHROME_STOPS,
+               fork_stops=CLEVIS_STOPS, zorder=4):
+    """A tie rod or hanger between the pins ``p0`` and ``p1``, a clevis at each end.
+
+    A two-force member as it is built: a round rod ``d`` thick, shaded across like a
+    polished cylinder, screwed into a fork ``w`` wide (default ``2.4*d``) and ``L``
+    long around each pin (see :func:`clevis`). ``ends`` says which ends carry a fork;
+    an end without one is a flat cut through the rod at that point, the stub of a
+    rod cut free in a free body diagram. Returns the two points where the rod
+    leaves the forks (or the cut points).
+    """
+    p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
+    u = sk.unit(p1 - p0)
+    w = 2.4*d if w is None else w
+    q0 = clevis(ax, p0, u, w, L, fork_stops, zorder=zorder + 0.1) if ends[0] else p0
+    q1 = clevis(ax, p1, -u, w, L, fork_stops, zorder=zorder + 0.1) if ends[1] else p1
+    a = q0 - 0.1*w*u if ends[0] else q0            # tuck the rod into the forks
+    b = q1 + 0.1*w*u if ends[1] else q1
+    shaded_bar(ax, a, b, d, stops, round_ends=False, zorder=zorder)
+    return q0, q1
+
+
+def line_load(ax, p0, p1, height, n=None, text=None, q=(1.0, 1.0), inset=0.0,
+              color=sk.LOAD, lw=1.0, ms=8, fontsize=13, text_offset=None, zorder=6):
+    """A distributed load (a line load) on the edge from ``p0`` to ``p1``.
+
+    The arrows come in from the left of the walk p0 to p1 and end on the edge, so a
+    load on the top of a beam is walked left to right. ``height`` is the arrow length
+    at full intensity; ``q`` gives the intensity at the two ends as fractions of it,
+    so ``(0, 1)`` draws a triangular load. ``n`` arrows (default about one per
+    ``0.8*height``) are spread between ``inset`` from each end (a pair for the two
+    ends: clear of a rod or a wall at one of them), and a line joins their tails
+    over the whole length. ``text`` (the intensity, as ``3 kN/m`` or
+    ``q_0``) goes ``text_offset`` (default ``0.3*height``) beyond the middle of that
+    line, in the load's colour. Returns the points of the tail line.
+    """
+    p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
+    e = p1 - p0
+    Ln = np.linalg.norm(e)
+    nrm = sk.normal(e)
+    i0, i1 = np.broadcast_to(np.asarray(inset, float), 2)
+    n = n or max(int(round((Ln - i0 - i1)/(0.8*height))) + 1, 2)
+    tail = lambda s: p0 + s*e + height*np.interp(s, (0, 1), q)*nrm
+    for s in np.linspace(i0/Ln, 1 - i1/Ln, n):
+        if np.interp(s, (0, 1), q) > 1e-9:
+            ax.add_patch(FancyArrowPatch(tail(s), p0 + s*e, arrowstyle='-|>',
+                                         mutation_scale=ms, color=color, lw=lw, shrinkA=0,
+                                         shrinkB=0, zorder=zorder))
+    ends = np.array([tail(0.0), tail(1.0)])
+    ax.plot(ends[:, 0], ends[:, 1], color=color, lw=lw, solid_capstyle='butt', zorder=zorder)
+    if text:
+        off = 0.3*height if text_offset is None else text_offset
+        sk.label(ax, tail(0.5) + off*nrm, text, color=color, fontsize=fontsize,
+                 zorder=zorder + 1)
+    return ends
 
 
 def tone(base, normal, light=(-0.3, -0.6, 0.75)):
@@ -1278,13 +1393,42 @@ def section(ax, points, facecolor=SECTION, hatch='////', hatch_color='0.55',
                              lw=sk.LW, zorder=zorder + 0.01))
 
 
-def stepped_shaft(ax, steps, axis_y=0.0, stops=STEEL_STOPS, zorder=3):
+def face_stress(ax, x, r, side, N=None, sigma=None, axis_y=0.0, n=4, length=0.3,
+                N_length=0.75, color=sk.GREEN, fontsize=13, zorder=6):
+    """The normal stress on a cut face of a bar seen from the side, drawn positive.
+
+    The face stands at ``x`` with half-height ``r``; ``side`` is +1 for a face that
+    looks right and -1 for one that looks left, so the arrows leave the face (tension).
+    ``n`` thin arrows of ``length`` spread over the face carry the stress, labelled
+    ``sigma`` beside the lowest; the resultant is a thick arrow of ``N_length`` on the
+    axis, labelled ``N`` past its head. Both are internal forces, green.
+    """
+    d = (side, 0)
+    ys = np.linspace(-0.8*r, 0.8*r, n) if n > 1 else np.array([0.0])
+    for yi in ys[np.abs(ys) > 0.15*r]:                   # the axis is kept for N
+        sk.force(ax, (x, axis_y + yi), d, length, color=color, lw=1.2, zorder=zorder)
+    sk.force(ax, (x, axis_y), d, N_length, color=color, lw=2.4, zorder=zorder + 0.1)
+    if N is not None:
+        sk.label(ax, (x + side*(N_length + 0.25), axis_y + 0.02), N, color=color,
+                 fontsize=fontsize, zorder=zorder + 1)
+    if sigma is not None:
+        sk.label(ax, (x + side*(length + 0.22), axis_y + ys[0] - 0.2), sigma, color=color,
+                 fontsize=fontsize, zorder=zorder + 1)
+
+
+def stepped_shaft(ax, steps, axis_y=0.0, stops=STEEL_STOPS, zorder=3, ends=('flat', 'flat'),
+                  waves=1.0, amplitude=0.06):
     """A turned shaft seen from the side, not cut: ``steps`` is a list of
-    ``(x0, x1, r)``, one cylinder per step, each shaded across its diameter. Shafts,
-    pins and bolts stay uncut in an assembly section, as in a drawing."""
-    for x0, x1, r in steps:
-        shaded_rect(ax, (x0, axis_y - r), x1 - x0, 2*r, stops=stops, axis='y',
-                    zorder=zorder)
+    ``(x0, x1, r)``, one cylinder per step, each shaded across its diameter and
+    outlined, so every change of diameter shows its edge. Shafts, pins and bolts stay
+    uncut in an assembly section, as in a drawing. ``ends`` (left, right) takes the
+    end kinds of ``sk.bar_outline``: ``'cut'`` draws a piece of a bar in a free body
+    diagram, ``'round'`` a round-ended rod."""
+    last = len(steps) - 1
+    for i, step in enumerate(steps):
+        kinds = (ends[0] if i == 0 else 'flat', ends[1] if i == last else 'flat')
+        shade(ax, sk.bar_outline([step], kinds, waves, amplitude, axis_y), stops, (0, 1),
+              zorder=zorder)
 
 
 def bearing_end_view(ax, centre, r_in, r_out, n=9, angle=0.0, zorder=4):
