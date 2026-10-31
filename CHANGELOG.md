@@ -33,6 +33,27 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.26.0] - 2026-10-31
+
+### Added
+- `sketch_extra.matrix_table`: a matrix written out in square brackets, determinant bars or
+  none, from the top left corner or the centre. Every entry of a row stands on one baseline
+  (0.36 em below the row centre, in points), so entries with and without descenders sit
+  level. Coloured entries, filled cells, a struck row and column for a minor, a name or
+  factor on the left. Returns a `MatrixBox` (bracket edges, `middle`, `cell(i, j)` and the
+  `baseline` transform for text written in line with the rows). Replaces three local
+  matrix helpers of the book's matrix chapters.
+- `sketch_extra.plane_axes`: the x and y axes of a plane from a lower to an upper corner,
+  letters past the heads, optional numbered integer ticks; gaps in points.
+- `sketch_extra.grid`: a light background grid at the multiples of a step.
+- `sketch_extra.region`: a polygon with a see-through fill and an opaque outline in one
+  colour, the unit square and its image under a map.
+- `sketch_extra.rot3(axis, deg)`: the rotation matrix about a coordinate axis.
+- `Proj.coordinate_lines(ax, p)`: the dotted box edges that place a point in space.
+- `Proj.axes` takes one length per axis, `ms` for the head size, `neg` for grey negative
+  half-axes and `fit=True` to widen autoscaled limits to the arrows and labels. The
+  defaults draw as before.
+
 ## [0.25.1] - 2026-10-31
 
 ### Fixed

@@ -119,8 +119,13 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `clevis(ax, pin, direction, w, L)` / `CLEVIS_STOPS` | a rod-end fork from the side, rounded about its pin, running `L` along `direction`; returns where the rod starts |
 | `clevis_rod(ax, p0, p1, d, w, L, ends)` | a tie rod or hanger between two pins, a clevis at each end, the rod in `CHROME_STOPS`; `ends=(True, False)` cuts it flat at `p1`, the stub in a free body diagram |
 | `line_load(ax, p0, p1, height, n, text, q, inset)` | a distributed load on the edge p0→p1, arrows in from its left ending on it, tails joined; `q=(0, 1)` a triangular load, `inset` (or a pair) keeps the arrows clear of a rod at an end; label in the load's colour |
-| `Proj(ex, ey, ez)`, `Proj.from_view(d, up)` | a fixed axonometric projection for 3D figures, given by the page images of the unit vectors or by a viewing direction, with `.axes`, `.force` and `.arc` |
+| `Proj(ex, ey, ez)`, `Proj.from_view(d, up)` | a fixed axonometric projection for 3D figures, given by the page images of the unit vectors or by a viewing direction, with `.axes` (one length or one per axis, `neg=` for the negative half-axes, `fit=True` to widen autoscaled limits), `.force`, `.arc` and `.coordinate_lines(ax, p)`, the dotted box edges that place a point in space |
 | `tone(base, normal, light)` | a face colour lit from `light`, for shaded 3D faces |
+| `matrix_table(ax, M, xy, dx, dy, centred, colors, fills, struck, name, delim)` | a matrix written out in brackets (`'['`), determinant bars (`'\|'`) or none: entries level on each row's baseline, cells coloured or filled (a row and a column meeting in a product), `struck=(i, j)` for a minor; returns a `MatrixBox` with the bracket edges, `cell(i, j)` and the `baseline` transform, to place the next matrix, an operator or a mark |
+| `plane_axes(ax, lo, hi, labels, ticks)` | the x and y axes of a plane from `lo` to `hi` through the origin, letters past the heads, `ticks=True` for numbered integer ticks; gaps in points, so they hold at any scale |
+| `grid(ax, xlim, ylim, step)` | a light background grid at the multiples of `step`, to count squares on a map of the plane |
+| `region(ax, pts, color, alpha, facecolor, ls)` | a region with a see-through fill and an opaque outline: the unit square and its image, an area; `alpha=0, ls='--'` for where it was before a map |
+| `rot3(axis, deg)` | the rotation matrix about coordinate axis 0, 1 or 2, anticlockwise seen from its tip (`sk.rot` is the plane one) |
 | `vcylinder`, `rod3d`, `sphere`, `box3d`, `thread3d`, `ring`, `speckle` | 3D solids for `Proj` figures |
 | `circle_tangents(centre, r, point)` | the two points where lines from `point` touch a circle, left and right seen from the point: the free ends of a brake band or a belt |
 | `embed_svg`, `embed_svg_at`, `data_to_svg` | paste a licensed SVG drawing into a saved figure |

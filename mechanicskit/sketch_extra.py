@@ -12,6 +12,9 @@
     hatched_wall, sliding_block, bracket
                   supports and blocks standing on the gradient ground
     tone          a face colour lit by a light direction, for 3D figures
+    matrix_table, plane_axes, grid, region, rot3
+                  the figures of linear algebra: a matrix in brackets, plane axes with
+                  ticks, a background grid, a region and its image under a map
 
 The gradients are stacks of clipped strips, so the output stays pure vector
 and renders the same in every viewer.
@@ -448,19 +451,41 @@ class Proj:
         return np.asarray(p, float) @ self.e
 
     def axes(self, ax, origin, length, labels=('$x$', '$y$', '$z$'), lw=1.2,
-             offsets=None, fontsize=12):
-        """The coordinate triad at ``origin``; ``offsets`` moves a label, by axis index."""
+             offsets=None, fontsize=12, ms=12, neg=0.0, fit=False):
+        """The coordinate triad at ``origin``; ``offsets`` moves a label, by axis index.
+
+        ``length`` is one number or one per axis. ``neg`` draws each axis that far on
+        the negative side as a thin grey line, so a vector with a negative component
+        still has its axis. The arrows are patches, which leave the data limits alone;
+        ``fit=True`` widens the limits to take in the arrows and labels, for a figure
+        that autoscales.
+        """
         o = self(origin)
         offsets = offsets or {}
+        L = np.broadcast_to(np.asarray(length, float), (3,))
         for k, lab in enumerate(labels):
             d = np.zeros(3)
             d[k] = 1
-            tip = self(np.asarray(origin) + length*d)
-            ax.add_patch(FancyArrowPatch(o, tip, arrowstyle='-|>', mutation_scale=12,
+            tip = self(np.asarray(origin) + L[k]*d)
+            if neg:
+                ax.plot(*np.array([o, self(np.asarray(origin) - neg*d)]).T, color='0.55',
+                        lw=0.8, zorder=1)
+            ax.add_patch(FancyArrowPatch(o, tip, arrowstyle='-|>', mutation_scale=ms,
                                          color=sk.EDGE, lw=lw, shrinkA=0, shrinkB=0,
                                          zorder=5))
-            sk.label(ax, tip + 0.08*length*sk.unit(tip - o) + np.asarray(offsets.get(k, (0, 0))),
-                     lab, fontsize=fontsize)
+            at = tip + 0.08*L[k]*sk.unit(tip - o) + np.asarray(offsets.get(k, (0, 0)))
+            sk.label(ax, at, lab, fontsize=fontsize)
+            if fit:
+                ax.update_datalim([o, tip + 0.15*L[k]*sk.unit(tip - o)])
+
+    def coordinate_lines(self, ax, p, color='0.55', lw=0.8, zorder=2):
+        """The dotted lines that place the point ``p`` in space: from the x and y axes to
+        its foot in the xy plane, and up from the foot to ``p``, the edges of the box of
+        its coordinates that a reader follows to read them off."""
+        x, y, z = p
+        for a, b in (((x, 0, 0), (x, y, 0)), ((0, y, 0), (x, y, 0)), ((x, y, 0), (x, y, z))):
+            ax.plot(*np.array([self(a), self(b)]).T, color=color, lw=lw, ls=(0, (2, 3)),
+                    zorder=zorder)
 
     @classmethod
     def from_view(cls, d, up=(0, 0, 1.0)):
@@ -1447,3 +1472,177 @@ def bearing_end_view(ax, centre, r_in, r_out, n=9, angle=0.0, zorder=4):
         sphere(ax, c + r_m*np.array([np.cos(a), np.sin(a)]), rb, stops=BALL_STOPS,
                zorder=zorder + 0.2)
     return r_m, rb
+
+
+# ------------------------------------------------------------------ linear algebra figures
+
+def rot3(axis, deg):
+    """The 3x3 matrix that turns a vector ``deg`` degrees about the coordinate axis
+    ``axis`` (0, 1, 2 for x, y, z), anticlockwise seen from the tip of that axis: it acts
+    on the cyclic pair (y, z), (z, x) or (x, y). ``sk.rot`` is the plane one."""
+    c, s = np.cos(np.radians(deg)), np.sin(np.radians(deg))
+    a, b = (axis + 1) % 3, (axis + 2) % 3
+    R = np.eye(3)
+    R[a, a], R[a, b], R[b, a], R[b, b] = c, -s, s, c
+    return R
+
+
+def grid(ax, xlim, ylim, step=1, color='0.85', lw=0.6, zorder=0):
+    """A light background grid over ``xlim`` x ``ylim``, lines at the multiples of
+    ``step``: the squares a reader counts to read a vector or an area off a map."""
+    for lo, hi, vertical in ((*xlim, True), (*ylim, False)):
+        for k in np.arange(np.ceil(lo/step - 1e-9), np.floor(hi/step + 1e-9) + 1)*step:
+            xs, ys = ([k, k], ylim) if vertical else (xlim, [k, k])
+            ax.plot(xs, ys, color=color, lw=lw, zorder=zorder)
+
+
+def region(ax, pts, color, alpha=0.25, facecolor=None, ls='-', lw=1.2, zorder=2):
+    """A closed region with a see-through fill and an opaque outline in ``color``: the
+    unit square and its image under a map, an area, a plane seen edge-on in a 3D figure.
+
+    The fill is ``facecolor`` (``color`` if not given) at opacity ``alpha``; ``alpha=0``
+    leaves only the outline, dashed with ``ls='--'`` for where a region was before a map.
+    """
+    from matplotlib.colors import to_rgba
+    patch = Polygon(np.asarray(pts, float), closed=True, lw=lw, ls=ls, zorder=zorder,
+                    facecolor=to_rgba(color if facecolor is None else facecolor, alpha),
+                    edgecolor=color)
+    ax.add_patch(patch)
+    return patch
+
+
+def _offset(ax, dx=0.0, dy=0.0):
+    """Data coordinates moved by (dx, dy) points: a gap that keeps its size at any scale."""
+    from matplotlib.transforms import offset_copy
+    return offset_copy(ax.transData, fig=ax.figure, x=dx, y=dy, units='points')
+
+
+def plane_axes(ax, lo, hi, labels=('$x$', '$y$'), ticks=False, fontsize=12,
+               tick_fontsize=None, color='black', lw=1.0, ms=10, zorder=5):
+    """The x and y axes of a plane through the origin, from ``lo`` to ``hi`` (corners
+    (x, y)), with heads at ``hi``: the x letter under the end of its axis, the y letter
+    beside the head of its axis, on the right.
+
+    ``lo = (0, 0)`` gives the two arrows from the origin of a first-quadrant figure.
+    ``ticks=True`` marks and numbers the integers along both axes, leaving out 0 and
+    any too close to a head; a pair of lists gives the x and y ticks instead. Gaps are
+    in points, so the letters and numbers sit the same distance off the axes at any
+    scale of the figure.
+    """
+    lo, hi = np.asarray(lo, float), np.asarray(hi, float)
+    tick_fontsize = fontsize - 2 if tick_fontsize is None else tick_fontsize
+    sk.arrow(ax, (lo[0], 0), (hi[0], 0), color=color, lw=lw, ms=ms, zorder=zorder)
+    sk.arrow(ax, (0, lo[1]), (0, hi[1]), color=color, lw=lw, ms=ms, zorder=zorder)
+    sk.label(ax, (hi[0], 0), labels[0], fontsize=fontsize, ha='left', va='top',
+             transform=_offset(ax, 1, -3))
+    sk.label(ax, (0, hi[1]), labels[1], fontsize=fontsize, ha='left', va='center',
+             transform=_offset(ax, 5, -4))
+    ax.update_datalim([lo, hi])
+    if ticks is False:
+        return
+    if ticks is True:
+        ticks = [[k for k in range(int(np.ceil(lo[i])), int(np.floor(hi[i])) + 1)
+                  if k and lo[i] < k <= hi[i] - 0.3] for i in (0, 1)]
+    xt, yt = ticks
+    ax.plot(xt, np.zeros(len(xt)), ls='', marker='|', ms=5, mew=0.8, color=color,
+            zorder=zorder)
+    ax.plot(np.zeros(len(yt)), yt, ls='', marker='_', ms=5, mew=0.8, color=color,
+            zorder=zorder)
+    for k in xt:
+        sk.label(ax, (k, 0), f'${k:g}$', fontsize=tick_fontsize, va='top',
+                 transform=_offset(ax, 0, -4))
+    for k in yt:
+        sk.label(ax, (0, k), f'${k:g}$', fontsize=tick_fontsize, ha='right',
+                 transform=_offset(ax, -4, 0))
+
+
+class MatrixBox:
+    """Where ``matrix_table`` drew a matrix: the outer edges of its brackets (``left``,
+    ``right``, ``top``, ``bottom``), ``middle``, and ``cell(i, j)``, the centre of an
+    entry, for a mark drawn on it afterwards. ``baseline`` is the transform the entries
+    were written with: text placed at a row's centre with ``va='baseline',
+    transform=box.baseline`` stands on that row's baseline, such as the equations a
+    matrix is read from, written out beside it."""
+
+    def __init__(self, x0, y0, dx, dy, m, n, gap, baseline=None):
+        self.baseline = baseline
+        self._x0, self._y0, self._dx, self._dy = x0, y0, dx, dy
+        self.left, self.right = x0 - gap, x0 + n*dx + gap
+        self.top, self.bottom = y0, y0 - m*dy
+
+    def cell(self, i, j):
+        return np.array([self._x0 + (j + 0.5)*self._dx, self._y0 - (i + 0.5)*self._dy])
+
+    @property
+    def middle(self):
+        return np.array([(self.left + self.right)/2, (self.top + self.bottom)/2])
+
+
+def matrix_table(ax, M, xy, dx=0.62, dy=None, centred=False, colors=None, fills=None,
+                 struck=None, name=None, name_color='black', delim='[', fontsize=12, lw=1.1,
+                 gap=0.05, serif=0.1, strike_color=sk.LOAD, zorder=3):
+    """A matrix written out in its brackets, entries in cells ``dx`` wide and ``dy`` high.
+
+    ``xy`` is the top left corner of the cells, or their centre with ``centred=True``.
+    An entry is a number (written with ``:g``) or a TeX string without dollars. Every
+    entry of a row stands on one baseline, so ``y`` and ``2`` sit level with ``x`` and
+    ``4`` although their glyphs differ in height; the baseline lies 0.36 em below the
+    row's centre, which centres the digits on it.
+
+    ``colors`` and ``fills`` give an entry's colour and a cell's background, as a dict
+    ``{(i, j): colour}`` or as nested lists; filled cells tile the matrix without a gap,
+    the way a row and a column picked out of a product meet in one cell.
+    ``struck=(i, j)`` strikes out row i and column j (greyed, with a line through each in
+    ``strike_color``): the minor of a cofactor expansion. ``name`` (TeX with dollars,
+    such as ``'$\\boldsymbol{A} =$'``, or a factor such as ``'$-4$'`` in ``name_color``)
+    stands to the left on the middle baseline.
+    ``delim`` is ``'['`` for square brackets with serifs ``serif`` long, ``'|'`` for the
+    bars of a determinant, or ``None``.
+
+    Returns a ``MatrixBox`` with the bracket edges and the cell centres, so that the next
+    matrix, an operator or a mark can be placed from it.
+    """
+    rows = [list(r) for r in (M.tolist() if hasattr(M, 'tolist') else M)]
+    m, n = len(rows), len(rows[0])
+    dy = dx if dy is None else dy
+    x0, y0 = np.asarray(xy, float)
+    if centred:
+        x0, y0 = x0 - n*dx/2, y0 + m*dy/2
+    box = MatrixBox(x0, y0, dx, dy, m, n, gap, _offset(ax, 0, -0.36*fontsize))
+
+    def table(spec):
+        if spec is None:
+            return {}
+        if isinstance(spec, dict):
+            return spec
+        return {(i, j): c for i, r in enumerate(spec) for j, c in enumerate(r)}
+    colors, fills = table(colors), table(fills)
+    for (i, j), f in fills.items():
+        ax.add_patch(Rectangle((x0 + j*dx, y0 - (i + 1)*dy), dx, dy, facecolor=f,
+                               edgecolor='none', zorder=zorder - 2))
+    for i, r in enumerate(rows):
+        for j, e in enumerate(r):
+            gone = struck is not None and (i == struck[0] or j == struck[1])
+            c = '0.7' if gone else colors.get((i, j), 'black')
+            text = e if isinstance(e, str) else f'{e:g}'
+            # an outline would paint white over a fill and cut the strike lines
+            sk.label(ax, box.cell(i, j), f'${text}$', color=c, fontsize=fontsize,
+                     va='baseline', transform=box.baseline, zorder=zorder,
+                     halo=(i, j) not in fills and struck is None)
+    if struck is not None:
+        xj, yi = box.cell(*struck)
+        ax.plot([box.left + 0.08, box.right - 0.08], [yi, yi], color=strike_color, lw=1.0,
+                zorder=zorder + 1)
+        ax.plot([xj, xj], [box.top - 0.05, box.bottom + 0.05], color=strike_color, lw=1.0,
+                zorder=zorder + 1)
+    if delim == '[':
+        for xe, s in ((box.left, 1), (box.right, -1)):
+            ax.plot([xe + s*serif, xe, xe, xe + s*serif], [box.top, box.top, box.bottom,
+                    box.bottom], color='black', lw=lw, zorder=zorder)
+    elif delim == '|':
+        for xe in (box.left, box.right):
+            ax.plot([xe, xe], [box.bottom, box.top], color='black', lw=lw, zorder=zorder)
+    if name:
+        sk.label(ax, (box.left - 0.1, box.middle[1]), name, color=name_color, fontsize=fontsize,
+                 ha='right', va='baseline', transform=box.baseline, zorder=zorder)
+    return box
