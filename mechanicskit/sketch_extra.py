@@ -35,6 +35,7 @@ import numpy as np
 from matplotlib import patheffects
 from matplotlib.colors import to_rgb
 from matplotlib.patches import Circle, FancyArrowPatch, Polygon, Rectangle
+from matplotlib.text import Text
 from mechanicskit import sketch as sk
 
 # cylinder-like shading across a bar: dark edge, light band, dark edge
@@ -839,7 +840,8 @@ def _tag(fig):
         inv = ax.transData.inverted()
         for art in _artists(ax):
             kind = type(art).__name__.lower().replace('patch', '') or 'patch'
-            text = art.get_text() if hasattr(art, 'get_text') else None
+            # only a Text has the text; a ContourSet has a get_text(lev, fmt) of another kind
+            text = art.get_text() if isinstance(art, Text) else None
             if art.get_gid():
                 gid = art.get_gid()
             elif text is not None:

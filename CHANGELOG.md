@@ -33,6 +33,14 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.25.1] - 2026-10-31
+
+### Fixed
+- `sketch_extra.save_svg` no longer crashes on a figure with contour lines: the id tagging
+  read every artist with a `get_text` method as a text, and a `ContourSet` has a
+  `get_text(lev, fmt)` that needs arguments. Only `Text` artists are read as text now; the
+  contour labels keep their ids.
+
 ## [0.25.0] - 2026-10-18
 
 ### Added
