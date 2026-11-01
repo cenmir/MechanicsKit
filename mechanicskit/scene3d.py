@@ -118,6 +118,12 @@ def rod(p0, p1, r):
 
 
 @primitive
+def ball(centre, r):
+    """Sphere: a ball support, the ball of a ball-and-socket joint, a point mass."""
+    return b.Solid.make_sphere(r, b.Plane(origin=tuple(np.asarray(centre, float))))
+
+
+@primitive
 def box(lo, hi):
     """Axis-aligned box between two corners."""
     lo, hi = np.asarray(lo, float), np.asarray(hi, float)

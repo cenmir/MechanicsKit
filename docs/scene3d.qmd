@@ -190,6 +190,7 @@ Each part has an `id`, a primitive `kind`, a `color` (a palette name or any matp
 | `kind` | Arguments | Use |
 |---|---|---|
 | `rod` | `p0, p1, r` | cylinder between two points: shafts, ropes, a hanging mass |
+| `ball` | `centre, r` | sphere: a ball support, the ball of a ball-and-socket joint |
 | `box` | `lo, hi` | axis-aligned box between two corners |
 | `drum` | `x0, w, r_core, r_flange, t_flange, r_hub, hub_len` | flanged drum on the $x$ axis, hub boss each side |
 | `rope_wraps` | `x0, w, r, d` | rope wound on a drum, one torus per turn, `r` to the rope centre |

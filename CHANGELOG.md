@@ -33,6 +33,12 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [Unreleased]
+
+### Added
+- `scene3d` primitive `ball(centre, r)`: a sphere, for ball supports and ball-and-socket
+  joints in the 3D support catalogue of the mechanics book.
+
 ## [0.26.0] - 2026-10-31
 
 ### Added
