@@ -33,7 +33,7 @@ decide patch vs. minor before pushing.
 
 ---
 
-## [Unreleased]
+## [0.27.0] - 2026-11-01
 
 ### Added
 - `scene3d` primitive `ball(centre, r)`: a sphere, for ball supports and ball-and-socket
@@ -688,7 +688,7 @@ the dashed ghost, and `colorbar=False` suppresses the colourbar that goes with
   `evalf(n)` on SymPy values rather than just formatting NumPy floats to
   `n` decimals. Pass `precision=2` explicitly for the old behavior.
 
-## [Unreleased]
+## [0.27.0] - 2026-11-01
 
 ### Added
 - **Intelligent color interpolation for 2D surface patches**
