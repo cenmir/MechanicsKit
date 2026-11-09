@@ -100,6 +100,7 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `hex_nut(ax, face, direction, e, m)` | a hex nut or bolt head from the side, across the corners: blue `NUT_STOPS` shading, face edges at ±e/4, 30° chamfer lines and arcs; the bolt end is a `sk.rounded_rect` under it |
 | `bearing_section(ax, x, r_in, r_out, B, kind, direction, alpha, ...)` | a rolling or plain bearing cut along the shaft axis, both halves, rings solid, balls and rollers shaded: deep groove, angular, four-point, self-aligning, cylindrical (NU/N/NJ/NUP), needle, tapered, spherical roller, CARB, thrust ball, plain, linear ball; `contact=` draws the load lines and the call returns them; `angle=` turns it, `tilt=` tilts only the inner ring and rolling elements |
 | `bearing_end_view(ax, centre, r_in, r_out, n)` | a ball bearing seen along its axis |
+| `toothed_side(ax, x0, x1, N, r_tip, axis_y, r_pitch)` | a spur gear, a ring of dog teeth or a splined shaft seen from the side: shaded to the tip radius, the near tooth edges along the axis, the pitch line as a chain line (ISO 2203); meshing gears overlap by the tooth depth |
 | `stepped_shaft(ax, steps, axis_y, ends)` | a turned shaft from the side, one shaded, outlined cylinder per `(x0, x1, r)`, so every change of diameter shows its edge; `ends` as in `sk.bar_outline` for a cut piece |
 | `face_stress(ax, x, r, side, N, sigma)` | the normal stress on a cut face seen from the side: thin green arrows over the face, the resultant `N` on the axis, drawn positive out of the face (`side` +1 faces right) |
 | `section(ax, points, hatch=, mirror_y=)` | a cut face of a housing or cover: hatched in light grey under a black outline, optionally mirrored for the lower half |
@@ -109,6 +110,7 @@ Inkscape is optional and only needed for the hand-edit round trip. Importing
 | `sk.ring_angle(N_s, N_p, N_r, sun_angle)` | the angle to give `ring_gear` so it meshes with those planets; the ring at angle 0 generally does not |
 | `bevel_section(ax, apex, axis, delta_deg, A0, b, m)` | a straight bevel gear cut through its axis: tooth zone between the back and front cones with tip and root lines running to the apex, the body under it; returns the pitch, tip and root points and the generator and normal per side |
 | `out_of_plane(ax, p, r, into=True, color)` | a force or velocity normal to the page: a circle with a cross (into the page) or a dot (out of it) |
+| `tractrix_half_tooth(h, b, A, R)` / `timing_pulley(N, p, U, h, b, A, R, clearance)` / `timing_belt_wrap(N, p, U, h, b, A, thickness, a0, a1, R)` / `timing_belt_strip(n, p, h, b, A, thickness, R)` | a synchronous belt tooth with tractrix flanks (US 4,605,389), the pulley with its grooves bent onto the land circle, the belt seated on it, a straight piece of the belt; outlines as Nx2 arrays |
 | `STEEL_STOPS`, `TAN_STOPS`, `BRASS_STOPS`, `DARK_STEEL_STOPS`, `CHROME_STOPS` | gradient stops: dark edge, light band, dark edge |
 | `vec(ax, p0, p1, color, text, offset)` | an arrow from p0 to p1 with a label at the head |
 | `dot(ax, p, ms)` | a black point |

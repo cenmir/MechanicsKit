@@ -218,6 +218,7 @@ Annotations are 3D objects. Their screen positions come from the same camera as 
 | `radius` | `centre, axis, r, angle_deg, r0, text, text_gap` | an arrow from radius `r0` to `r` in the plane normal to `axis`, at angle `angle_deg` |
 | `circle` | `centre, axis, r` | a dash-dot circle, for a pitch circle or bolt circle |
 | `label` | `at, text, role` | a haloed label at a 3D point |
+| `leader` | `at, text, screen_offset, text_gap` | a part named from outside the drawing: the text `screen_offset` away on the page, a thin grey arrow from it in to `at` (`sk.leader`) |
 | `point` | `at, text, ms` | a dot with a label, for named points ($A$, $B$, $G$) |
 | `cog` | `at, size, text` | the centre-of-gravity symbol |
 | `arc` | `centre, axis, r, a0, a1, role, text` | an arc in the plane normal to `axis`: `rotation` (green, with head, default), `load` (red, a moment) or `angle` (thin grey, no head, black label, for a geometric angle such as $\theta$) |
@@ -244,7 +245,7 @@ $$
 
 and a point $\mathbf p$ lands at $(\mathbf p \cdot \mathbf X,\ \mathbf p \cdot \mathbf Y)$ on the page. The HLR projector is built from the same frame (`gp_Ax2` with main direction $\mathbf e$ and $x$ direction $\mathbf X$), so the edges, the fills and the annotations share one coordinate system with no fitting step.
 
-`light` is given in the camera frame ($\mathbf X$ right, $\mathbf Y$ up, $\mathbf e$ towards the viewer), so the key light stays at the viewer's upper left whichever camera wins. An optional `pick` overrides the scored choice; without it, the lowest score is used.
+`light` is given in the camera frame ($\mathbf X$ right, $\mathbf Y$ up, $\mathbf e$ towards the viewer), so the key light stays at the viewer's upper left whichever camera wins. An optional `pick` overrides the scored choice; without it, the lowest score is used. A spec with twisted freeform surfaces, such as the flanks of a helical gear, sets `"hlr": "poly"`: the exact hidden-line algorithm can run for hours on them, and the polygonal one on a fine mesh takes seconds.
 
 ## Checks
 

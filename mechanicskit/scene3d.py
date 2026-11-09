@@ -421,13 +421,33 @@ def _edges(compound, defl=0.25):
     return out
 
 
-def hidden_lines(solids, cam):
+def hidden_lines(solids, cam, poly=False):
     """Visible silhouettes ("outline") and sharp edges, in screen coordinates.
 
     The HLR projector frame has its main direction along e and its x direction
     along cam.X, so HLR output and ``cam(p)`` share one coordinate system.
     Smooth (tangent) edges are left out, as in a hand drawing.
+
+    ``poly=True`` uses the polygonal algorithm on a fine triangulation of each
+    solid. The exact one can take hours on twisted freeform surfaces (a helical
+    gear's helicoid flanks); the polygonal one takes seconds, with silhouettes
+    accurate to the mesh, 0.02 % of the part's size.
     """
+    if poly:
+        from OCP.HLRBRep import HLRBRep_PolyAlgo, HLRBRep_PolyHLRToShape
+        from OCP.BRepMesh import BRepMesh_IncrementalMesh
+        algo = HLRBRep_PolyAlgo()
+        for s in solids:
+            bb = s.bounding_box()
+            BRepMesh_IncrementalMesh(s.wrapped, 2e-4*max(bb.size.X, bb.size.Y, bb.size.Z),
+                                     False, 0.05, True)
+            algo.Load(s.wrapped)
+        algo.Projector(HLRAlgo_Projector(gp_Ax2(gp_Pnt(0, 0, 0), gp_Dir(*cam.e),
+                                                gp_Dir(*cam.X))))
+        algo.Update()
+        h = HLRBRep_PolyHLRToShape()
+        h.Update(algo)
+        return {"outline": _edges(h.OutLineVCompound()), "sharp": _edges(h.VCompound())}
     algo = HLRBRep_Algo()
     for s in solids:
         algo.Add(s.wrapped)
@@ -677,6 +697,17 @@ def annotate(ax, spec, P, cam):
             color = {"load": sk.LOAD, "resultant": sk.BLUE}.get(a.get("role"), "black")
             sk.label(ax, cam(ev(a["at"], P)) + shift, a["text"], fontsize=12, halo=True,
                      zorder=9, color=color)
+        elif k == "leader":
+            # a part named from outside the drawing: the text at `screen_offset` from the
+            # point, a thin grey arrow from the text in to the point (sk.leader)
+            p = cam(ev(a["at"], P))
+            q = p + shift
+            sk.leader(ax, p, q, gap=a.get("text_gap", 4), zorder=8)
+            u = (q - p)/max(np.linalg.norm(q - p), 1e-9)
+            ha = "left" if u[0] > 0.3 else "right" if u[0] < -0.3 else "center"
+            va = "bottom" if u[1] > 0.3 else "top" if u[1] < -0.3 else "center"
+            anchored(p, sk.label(ax, q + a.get("text_gap", 4)*u, a["text"], fontsize=12,
+                                 halo=True, zorder=9, ha=ha, va=va))
         else:
             raise ValueError(f"unknown annotation kind {k!r}")
     return samples
@@ -783,7 +814,7 @@ def score(rep):
 def render(spec, P, parts, cam, out, width=5.2):
     """Draw one camera to out.svg and out.png and return its check report."""
     solids = [s for v, _ in parts.values() for s in v]
-    edges = hidden_lines(solids, cam)
+    edges = hidden_lines(solids, cam, poly=spec.get("hlr") == "poly")
     tris, depth, gid, groups = triangles(parts, cam, spec.get("light", [-0.25, 0.45, 0.85]))
     pts = tris.reshape(-1, 2)
     (x0, y0), (x1, y1) = pts.min(0) - 70, pts.max(0) + 70

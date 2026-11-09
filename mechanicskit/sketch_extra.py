@@ -12,6 +12,8 @@
     hatched_wall, sliding_block, bracket
                   supports and blocks standing on the gradient ground
     tone          a face colour lit by a light direction, for 3D figures
+    tractrix_half_tooth, timing_pulley, timing_belt_wrap, timing_belt_strip
+                  a synchronous belt and pulley with the tractrix tooth of US 4,605,389
     matrix_table, plane_axes, grid, region, rot3
                   the figures of linear algebra: a matrix in brackets, plane axes with
                   ticks, a background grid, a region and its image under a map
@@ -1458,6 +1460,30 @@ def stepped_shaft(ax, steps, axis_y=0.0, stops=STEEL_STOPS, zorder=3, ends=('fla
               zorder=zorder)
 
 
+def toothed_side(ax, x0, x1, N, r_tip, axis_y=0.0, r_pitch=None, phase=0.0, land=0.5,
+                 stops=STEEL_STOPS, edgecolor=sk.EDGE, lw=sk.LW, tooth_color=None,
+                 tooth_lw=0.5, zorder=3):
+    """A straight-toothed part seen from the side across its axis (x): a spur gear, a ring
+    of dog teeth or a splined shaft. A cylinder to the tip radius, shaded across its
+    diameter, with the edges of the tooth tips on the near side drawn along the axis, as
+    the eye sees them; ``land`` is the tip width as a fraction of the pitch angle and
+    ``phase`` turns the teeth (radians). ``r_pitch`` adds the pitch line as a thin chain
+    line, the convention of ISO 2203 for a gear in a view. Two gears in mesh overlap by
+    the depth of their teeth, their pitch lines touching."""
+    shaded_rect(ax, (x0, axis_y - r_tip), x1 - x0, 2*r_tip, stops, edgecolor=edgecolor,
+                lw=lw, zorder=zorder)
+    half = land*np.pi/N
+    th = phase + 2*np.pi*np.arange(N)/N
+    for t in np.r_[th - half, th + half]:
+        if np.cos(t) > 0.05:                       # the near half; silhouettes left out
+            y = axis_y + r_tip*np.sin(t)
+            ax.plot([x0, x1], [y, y], color=tooth_color or sk.STEEL_EDGE, lw=tooth_lw,
+                    zorder=zorder + 0.01, solid_capstyle='butt')
+    if r_pitch:
+        for y in (axis_y - r_pitch, axis_y + r_pitch):
+            sk.centreline(ax, (x0 - 1.5, y), (x1 + 1.5, y), lw=0.6, zorder=zorder + 0.02)
+
+
 def bearing_end_view(ax, centre, r_in, r_out, n=9, angle=0.0, zorder=4):
     """A ball bearing seen along its axis: inner and outer ring, ``n`` balls on the
     pitch circle, the first at ``angle`` degrees. Returns the pitch radius and the ball
@@ -1646,3 +1672,114 @@ def matrix_table(ax, M, xy, dx=0.62, dy=None, centred=False, colors=None, fills=
         sk.label(ax, (box.left - 0.1, box.middle[1]), name, color=name_color, fontsize=fontsize,
                  ha='right', va='baseline', transform=box.baseline, zorder=zorder)
     return box
+
+
+def tractrix_half_tooth(h, b, A, R=0.0, n=60):
+    """Half of a toothed-belt tooth with tractrix flanks, as ``(x, y)`` points.
+
+    ``x`` runs from the tooth centre line and ``y`` from the tooth tip towards the belt body,
+    so the points go from the tip centre to the land at ``y = h``. The flank is
+    ``y = A*(acosh(A/s) - sqrt(1 - (s/A)**2))`` of US patent 4,605,389, with ``A`` the constant
+    tangent length and ``s`` measured from the axis outside the tooth; ``b`` is the base width
+    before the blend, a radius centred on the tooth axis closes the tip, and ``R`` blends the
+    flank tangentially into the land.
+    """
+    y_of = lambda s: A*(np.arccosh(A/s) - np.sqrt(1 - (s/A)**2))
+    lo, hi = 1e-9*A, A
+    for _ in range(200):                                # s at the land, y(s) = h
+        mid = (lo + hi)/2
+        lo, hi = (mid, hi) if y_of(mid) > h else (lo, mid)
+    s4 = (lo + hi)/2
+    if A - s4 >= b/2:
+        raise ValueError('A too large for b: the two flanks would overlap at the tip')
+    s = A - (A - s4)*(1 - np.cos(np.linspace(0, np.pi/2, n)))
+    x = b/2 - (s - s4)
+    y = y_of(s)
+    pts = np.c_[x, y]
+    t = np.gradient(pts, axis=0)
+    t /= np.linalg.norm(t, axis=1)[:, None]
+    # a radius centred on the tooth axis, tangent to the flank and reaching y = 0 at the tip
+    with np.errstate(divide='ignore', invalid='ignore'):
+        g = pts[:, 1] + pts[:, 0]/t[:, 1]*(t[:, 0] - 1)
+    k_tip = np.nonzero(g[1:] > 0)[0][0] + 1
+    rho = pts[k_tip, 0]/t[k_tip, 1]
+    cy = pts[k_tip, 1] + rho*t[k_tip, 0]
+    th = np.arctan2(pts[k_tip, 0], cy - pts[k_tip, 1])
+    ang = np.linspace(0, th, 20)[:-1]
+    pts = np.vstack([np.c_[rho*np.sin(ang), cy - rho*np.cos(ang)], pts[k_tip:]])
+    if R > 0:
+        # outward normal of the flank; walk down it until a circle of radius R touches the land
+        t = np.gradient(pts, axis=0)
+        t /= np.linalg.norm(t, axis=1)[:, None]
+        nrm = np.c_[t[:, 1], -t[:, 0]]
+        cy = pts[:, 1] + R*nrm[:, 1]
+        k = np.nonzero(cy >= h - R)[0][0]
+        c = np.array([pts[k, 0] + R*nrm[k, 0], h - R])
+        a0 = np.arctan2(*(pts[k] - c)[::-1])
+        a1 = np.pi/2
+        ang = np.linspace(a0, a1, 16)[1:]
+        pts = np.vstack([pts[:k + 1], c + R*np.c_[np.cos(ang), np.sin(ang)]])
+    return pts
+
+
+def _bent_tooth(half, r_land, h, ang, wall):
+    """A tooth profile bent onto the land circle: ang is the tooth centre, wall the depth map."""
+    left = np.c_[ang - half[::-1, 0]/r_land, wall(half[::-1, 1])]
+    right = np.c_[ang + half[1:, 0]/r_land, wall(half[1:, 1])]
+    return np.vstack([left, right])
+
+
+def timing_pulley(N, p, U, h, b, A, R=0.0, clearance=1.0, centre=(0, 0), phase=np.pi/2):
+    """Outline of a synchronous pulley as a closed Nx2 array, grooves centred on N equal angles.
+
+    The land lies at ``N*p/pi/2 - U``. The groove is the belt tooth ``tractrix_half_tooth(h, b, A, R)``
+    made ``clearance`` times wider, bent onto the land circle so that its depth is ``h`` measured
+    radially. The first groove is at ``phase``.
+    """
+    ro = N*p/(2*np.pi) - U
+    half = tractrix_half_tooth(h, b*clearance, A, R)
+    out = []
+    for k in range(N):
+        g = _bent_tooth(half, ro, h, phase + 2*np.pi*k/N, lambda y: ro - h + y)
+        out.append(g)
+        nxt = phase + 2*np.pi*(k + 1)/N - half[-1, 0]/ro
+        a = np.linspace(g[-1, 0], nxt, 8)[1:-1]
+        out.append(np.c_[a, np.full(a.size, ro)])
+    a, r = np.vstack(out).T
+    return np.c_[centre[0] + r*np.cos(a), centre[1] + r*np.sin(a)]
+
+
+def timing_belt_wrap(N, p, U, h, b, A, thickness, a0, a1, R=0.0, centre=(0, 0), phase=np.pi/2):
+    """A belt seated on a ``timing_pulley`` between the angles a0 < a1 (radians), closed Nx2 array.
+
+    Teeth go only into grooves wholly inside the arc. The back of the belt is at
+    ``r_land + thickness - h``; the tensile cord is at the pitch radius, ``U`` above the land.
+    """
+    ro = N*p/(2*np.pi) - U
+    half = tractrix_half_tooth(h, b, A, R)
+    dk = 2*np.pi/N
+    ks = np.arange(np.ceil((a0 - phase)/dk), np.floor((a1 - phase)/dk) + 1)
+    inner = [[a1, ro]]
+    for k in ks[::-1]:
+        c = phase + k*dk
+        if c + half[-1, 0]/ro < a1 and c - half[-1, 0]/ro > a0:
+            inner.append(_bent_tooth(half, ro, h, c, lambda y: ro - h + y)[::-1])
+    inner.append([[a0, ro]])
+    a, r = np.vstack(inner).T
+    back = np.linspace(a0, a1, 200)
+    a = np.r_[a, back]
+    r = np.r_[r, np.full(back.size, ro + thickness - h)]
+    return np.c_[centre[0] + r*np.cos(a), centre[1] + r*np.sin(a)]
+
+
+def timing_belt_strip(n, p, h, b, A, thickness, R=0.0, x0=0.0, y0=0.0):
+    """A straight piece of toothed belt, ``n`` teeth down, its land at ``y0``, closed Nx2 array."""
+    half = tractrix_half_tooth(h, b, A, R)
+    tooth = np.vstack([np.c_[-half[::-1, 0], half[::-1, 1]], half[1:]])
+    xs = [x0]; ys = [y0]
+    for k in range(n):
+        xs = np.r_[xs, x0 + (k + 0.5)*p + tooth[:, 0]]
+        ys = np.r_[ys, y0 - h + tooth[:, 1]]
+    xs = np.r_[xs, x0 + n*p, x0 + n*p, x0]
+    ys = np.r_[ys, y0, y0 + thickness - h, y0 + thickness - h]
+    return np.c_[xs, ys]

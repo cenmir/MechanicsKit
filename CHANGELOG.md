@@ -33,6 +33,19 @@ decide patch vs. minor before pushing.
 
 ---
 
+## [0.28.0] - 2026-11-09
+
+### Added
+- `sketch_extra.tractrix_half_tooth`, `timing_pulley`, `timing_belt_wrap`, `timing_belt_strip`: synchronous belt and pulley outlines with the tractrix flank of US 4,605,389.
+- `scene3d`: spec key `"hlr": "poly"` draws the hidden lines with OpenCascade's polygonal
+  algorithm on a fine mesh. The exact algorithm takes hours on helical gear flanks
+  (twisted B-spline surfaces); the polygonal one takes seconds.
+- `sketch_extra.toothed_side`: a spur gear, dog teeth or a splined shaft seen from the side,
+  with the near tooth edges and the ISO 2203 pitch line; for gearbox layouts.
+- `scene3d`: a `leader` annotation, a label placed `screen_offset` away from a 3D point with
+  a thin grey arrow in to it, for naming the parts of an assembly (the dog clutch and
+  synchronizer figures of the mechanics book).
+
 ## [0.27.0] - 2026-11-01
 
 ### Added
